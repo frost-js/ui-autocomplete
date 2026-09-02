@@ -221,6 +221,8 @@ export default class Autocomplete extends BaseComponent {
         const transition = { direction: 'out' };
         this.#transition = transition;
 
+        // Keep the menu rendered until the opacity transition finishes.
+        $.setStyle(this.#menuNode, { display: 'block' });
         $.removeClass(this.#menuNode, this.constructor.classes.show);
         $.setAttribute(this.node, { 'aria-expanded': false });
         this.#setActiveDescendant(null);
@@ -238,6 +240,7 @@ export default class Autocomplete extends BaseComponent {
             }
 
             this.#resetMenu();
+            $.setStyle(this.#menuNode, { display: '' });
             $.detach(this.#menuNode);
             $.triggerEvent(this.node, 'hidden.ui.autocomplete');
         });
@@ -321,13 +324,14 @@ export default class Autocomplete extends BaseComponent {
         };
 
         if (this.options.fullWidth) {
-            popperOptions.beforeUpdate = (node) => {
-                $.setStyle(node, { width: '' });
-            };
-
-            popperOptions.afterUpdate = (node, reference) => {
+            popperOptions.beforeUpdate = (node, reference) => {
                 const width = $.width(reference, { boxSize: $.BORDER_BOX });
-                $.setStyle(node, { width: `${width}px` });
+                const inlineSize = `${width}px`;
+                $.setStyle(node, {
+                    inlineSize,
+                    maxInlineSize: inlineSize,
+                    minInlineSize: inlineSize,
+                });
             };
         }
 
@@ -642,13 +646,13 @@ export default class Autocomplete extends BaseComponent {
             this.#inputAttributes.set(attribute, $.getAttribute(this.node, attribute));
         }
 
-        const style = { maxHeight: this.options.maxHeight };
+        const style = { maxBlockSize: this.options.maxHeight };
         const window = this.node.ownerDocument.defaultView;
         const duration = Number(this.options.duration);
         const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
         if (!reduceMotion && Number.isFinite(duration) && duration >= 0) {
-            style['--ui-transition-duration'] = `${duration}ms`;
+            style['--ui-autocomplete-transition-duration'] = `${duration}ms`;
         }
 
         this.#menuNode = $.create('ul', {
@@ -1029,15 +1033,18 @@ export default class Autocomplete extends BaseComponent {
 
         if (!alreadyConnected) {
             this.#appendMenu();
-            $.css(this.#menuNode, 'opacity');
         }
 
+        // Render and commit the hidden menu before starting the transition.
+        $.setStyle(this.#menuNode, { display: 'block' });
+        $.css(this.#menuNode, 'opacity');
         this.#createPopper();
 
         const transition = { direction: 'in' };
         this.#transition = transition;
 
         $.addClass(this.#menuNode, this.constructor.classes.show);
+        $.setStyle(this.#menuNode, { display: '' });
         $.setAttribute(this.node, { 'aria-expanded': true });
 
         this.node.ownerDocument.defaultView.requestAnimationFrame((_) => {

@@ -168,6 +168,7 @@ var Autocomplete = class extends BaseComponent {
 		this.#cancelRequest();
 		const transition = { direction: "out" };
 		this.#transition = transition;
+		$.setStyle(this.#menuNode, { display: "block" });
 		$.removeClass(this.#menuNode, this.constructor.classes.show);
 		$.setAttribute(this.node, { "aria-expanded": false });
 		this.#setActiveDescendant(null);
@@ -179,6 +180,7 @@ var Autocomplete = class extends BaseComponent {
 				this.#popper = null;
 			}
 			this.#resetMenu();
+			$.setStyle(this.#menuNode, { display: "" });
 			$.detach(this.#menuNode);
 			$.triggerEvent(this.node, "hidden.ui.autocomplete");
 		});
@@ -236,15 +238,14 @@ var Autocomplete = class extends BaseComponent {
 			spacing: this.options.spacing,
 			minContact: this.options.minContact
 		};
-		if (this.options.fullWidth) {
-			popperOptions.beforeUpdate = (node) => {
-				$.setStyle(node, { width: "" });
-			};
-			popperOptions.afterUpdate = (node, reference) => {
-				const width = $.width(reference, { boxSize: $.BORDER_BOX });
-				$.setStyle(node, { width: `${width}px` });
-			};
-		}
+		if (this.options.fullWidth) popperOptions.beforeUpdate = (node, reference) => {
+			const inlineSize = `${$.width(reference, { boxSize: $.BORDER_BOX })}px`;
+			$.setStyle(node, {
+				inlineSize,
+				maxInlineSize: inlineSize,
+				minInlineSize: inlineSize
+			});
+		};
 		this.#popper = new Popper(this.#menuNode, popperOptions);
 	}
 	/**
@@ -448,10 +449,10 @@ var Autocomplete = class extends BaseComponent {
 	#render() {
 		const id = generateId("autocomplete");
 		for (const attribute of INPUT_ATTRIBUTES) this.#inputAttributes.set(attribute, $.getAttribute(this.node, attribute));
-		const style = { maxHeight: this.options.maxHeight };
+		const style = { maxBlockSize: this.options.maxHeight };
 		const window = this.node.ownerDocument.defaultView;
 		const duration = Number(this.options.duration);
-		if (!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches && Number.isFinite(duration) && duration >= 0) style["--ui-transition-duration"] = `${duration}ms`;
+		if (!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches && Number.isFinite(duration) && duration >= 0) style["--ui-autocomplete-transition-duration"] = `${duration}ms`;
 		this.#menuNode = $.create("ul", {
 			class: this.constructor.classes.menu,
 			style,
@@ -707,14 +708,14 @@ var Autocomplete = class extends BaseComponent {
 			focus,
 			term
 		});
-		if (!$.isConnected(this.#menuNode)) {
-			this.#appendMenu();
-			$.css(this.#menuNode, "opacity");
-		}
+		if (!$.isConnected(this.#menuNode)) this.#appendMenu();
+		$.setStyle(this.#menuNode, { display: "block" });
+		$.css(this.#menuNode, "opacity");
 		this.#createPopper();
 		const transition = { direction: "in" };
 		this.#transition = transition;
 		$.addClass(this.#menuNode, this.constructor.classes.show);
+		$.setStyle(this.#menuNode, { display: "" });
 		$.setAttribute(this.node, { "aria-expanded": true });
 		this.node.ownerDocument.defaultView.requestAnimationFrame((_) => {
 			if (this.node && this.#transition === transition) this.update();

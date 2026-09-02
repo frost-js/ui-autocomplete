@@ -1,60 +1,143 @@
-@import "vars";
+@use "vars";
 
 .autocomplete-menu {
-    --ui-autocomplete-z-index: #{$autocomplete-z-index};
-    --ui-autocomplete-color: #{$autocomplete-color};
-    --ui-autocomplete-bg: #{$autocomplete-bg};
-    --ui-autocomplete-border-width: #{$autocomplete-border-width};
-    --ui-autocomplete-border-color: #{$autocomplete-border-color};
-    --ui-autocomplete-item-padding-x: #{$autocomplete-item-padding-x};
-    --ui-autocomplete-item-padding-y: #{$autocomplete-item-padding-y};
-    --ui-autocomplete-item-color: #{$autocomplete-item-color};
-    --ui-autocomplete-item-focus-color: #{$autocomplete-item-focus-color};
-    --ui-autocomplete-item-focus-bg: #{$autocomplete-item-focus-bg};
-    --ui-autocomplete-item-active-color: #{$autocomplete-item-active-color};
-    --ui-autocomplete-item-active-bg: #{$autocomplete-item-active-bg};
+    --ui-autocomplete-z-index: #{vars.$autocomplete-z-index};
+    --ui-autocomplete-min-width: #{vars.$autocomplete-min-width};
+    --ui-autocomplete-padding-x: #{vars.$autocomplete-padding-x};
+    --ui-autocomplete-padding-y: #{vars.$autocomplete-padding-y};
+    --ui-autocomplete-color: #{vars.$autocomplete-color};
+    --ui-autocomplete-bg: #{vars.$autocomplete-bg};
+    --ui-autocomplete-backdrop-filter: #{vars.$autocomplete-backdrop-filter};
+    --ui-autocomplete-border-width: #{vars.$autocomplete-border-width};
+    --ui-autocomplete-border-color: #{vars.$autocomplete-border-color};
+    --ui-autocomplete-border-radius: #{vars.$autocomplete-border-radius};
+    --ui-autocomplete-box-shadow: #{vars.$autocomplete-box-shadow};
+    --ui-autocomplete-transition-duration: #{vars.$autocomplete-transition-duration};
+    --ui-autocomplete-item-padding-x: #{vars.$autocomplete-item-padding-x};
+    --ui-autocomplete-item-padding-y: #{vars.$autocomplete-item-padding-y};
+    --ui-autocomplete-item-font-weight: #{vars.$autocomplete-item-font-weight};
+    --ui-autocomplete-item-active-font-weight: #{vars.$autocomplete-item-active-font-weight};
+    --ui-autocomplete-item-color: #{vars.$autocomplete-item-color};
+    --ui-autocomplete-item-focus-color: #{vars.$autocomplete-item-focus-color};
+    --ui-autocomplete-item-focus-bg: #{vars.$autocomplete-item-focus-bg};
+    --ui-autocomplete-item-focus-box-shadow: #{vars.$autocomplete-item-focus-box-shadow};
+    --ui-autocomplete-item-active-color: #{vars.$autocomplete-item-active-color};
+    --ui-autocomplete-item-active-bg: #{vars.$autocomplete-item-active-bg};
+    --ui-autocomplete-info-color: #{vars.$autocomplete-info-color};
 
     position: absolute;
     z-index: var(--ui-autocomplete-z-index);
-    width: 100%;
-    padding: 0;
+    box-sizing: border-box;
+    display: none;
+    inline-size: max-content;
+    min-inline-size: min(var(--ui-autocomplete-min-width), calc(100vw - 1rem));
+    max-inline-size: calc(100vw - 1rem);
+    padding-block: var(--ui-autocomplete-padding-y);
+    padding-inline: var(--ui-autocomplete-padding-x);
     margin: 0;
+    overflow-x: hidden;
     overflow-y: auto;
-    font-size: $autocomplete-font-size;
+    overscroll-behavior: contain;
+    font-size: vars.$autocomplete-font-size;
     color: var(--ui-autocomplete-color);
-    text-align: left;
+    text-align: start;
+    list-style: none;
     background-color: var(--ui-autocomplete-bg);
     border: var(--ui-autocomplete-border-width) var(--ui-border-style) var(--ui-autocomplete-border-color);
+    border-radius: var(--ui-autocomplete-border-radius);
+    box-shadow: var(--ui-autocomplete-box-shadow);
+    opacity: 0;
+    backdrop-filter: var(--ui-autocomplete-backdrop-filter);
+
+    &.show {
+        display: block;
+        opacity: 1;
+    }
+}
+
+.autocomplete-menu-sm {
+    font-size: vars.$autocomplete-sm-font-size;
+}
+
+.autocomplete-menu-lg {
+    font-size: vars.$autocomplete-lg-font-size;
 }
 
 .autocomplete-item {
     clear: both;
+    box-sizing: border-box;
     display: block;
-    width: 100%;
-    padding: var(--ui-autocomplete-item-padding-y) var(--ui-autocomplete-item-padding-x);
-    font-weight: $autocomplete-item-font-weight;
+    inline-size: 100%;
+    max-inline-size: 100%;
+    padding-block: var(--ui-autocomplete-item-padding-y);
+    padding-inline: var(--ui-autocomplete-item-padding-x);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: var(--ui-autocomplete-item-font-weight);
     color: var(--ui-autocomplete-item-color);
     text-align: inherit;
     white-space: nowrap;
     cursor: default;
     background-color: transparent;
     border: 0;
+    border-radius: var(--ui-border-radius);
 
     &.active {
+        font-weight: var(--ui-autocomplete-item-active-font-weight);
         color: var(--ui-autocomplete-item-active-color);
         background-color: var(--ui-autocomplete-item-active-bg);
     }
 
     &.focus {
         color: var(--ui-autocomplete-item-focus-color);
+        outline: 0;
         background-color: var(--ui-autocomplete-item-focus-bg);
+        box-shadow: var(--ui-autocomplete-item-focus-box-shadow);
     }
 
-    .autocomplete-menu-sm & {
-        font-size: $autocomplete-sm-font-size;
+    &[aria-disabled="true"] {
+        text-overflow: clip;
+        color: var(--ui-autocomplete-info-color);
+        white-space: normal;
+        pointer-events: none;
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .autocomplete-menu {
+        transition-timing-function: var(--ui-transition-timing-function);
+        transition-duration: var(--ui-autocomplete-transition-duration);
+        transition-property: opacity;
     }
 
-    .autocomplete-menu-lg & {
-        font-size: $autocomplete-lg-font-size;
+    .autocomplete-item {
+        transition-timing-function: var(--ui-transition-timing-function);
+        transition-duration: var(--ui-transition-duration-fast);
+        transition-property: color, background-color, box-shadow;
+    }
+}
+
+@media (forced-colors: active) {
+    .autocomplete-menu {
+        color: CanvasText;
+        forced-color-adjust: none;
+        background-color: Canvas;
+        border-color: CanvasText;
+        box-shadow: none;
+        backdrop-filter: none;
+    }
+
+    .autocomplete-item {
+        color: CanvasText;
+
+        &:is(.active, .focus) {
+            color: HighlightText;
+            background-color: Highlight;
+            box-shadow: none;
+        }
+
+        &[aria-disabled="true"] {
+            color: GrayText;
+        }
     }
 }

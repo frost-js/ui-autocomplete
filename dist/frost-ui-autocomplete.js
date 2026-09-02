@@ -200,6 +200,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 			this.#cancelRequest();
 			const transition = { direction: "out" };
 			this.#transition = transition;
+			_fr0st_query.default.setStyle(this.#menuNode, { display: "block" });
 			_fr0st_query.default.removeClass(this.#menuNode, this.constructor.classes.show);
 			_fr0st_query.default.setAttribute(this.node, { "aria-expanded": false });
 			this.#setActiveDescendant(null);
@@ -211,6 +212,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 					this.#popper = null;
 				}
 				this.#resetMenu();
+				_fr0st_query.default.setStyle(this.#menuNode, { display: "" });
 				_fr0st_query.default.detach(this.#menuNode);
 				_fr0st_query.default.triggerEvent(this.node, "hidden.ui.autocomplete");
 			});
@@ -268,15 +270,14 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 				spacing: this.options.spacing,
 				minContact: this.options.minContact
 			};
-			if (this.options.fullWidth) {
-				popperOptions.beforeUpdate = (node) => {
-					_fr0st_query.default.setStyle(node, { width: "" });
-				};
-				popperOptions.afterUpdate = (node, reference) => {
-					const width = _fr0st_query.default.width(reference, { boxSize: _fr0st_query.default.BORDER_BOX });
-					_fr0st_query.default.setStyle(node, { width: `${width}px` });
-				};
-			}
+			if (this.options.fullWidth) popperOptions.beforeUpdate = (node, reference) => {
+				const inlineSize = `${_fr0st_query.default.width(reference, { boxSize: _fr0st_query.default.BORDER_BOX })}px`;
+				_fr0st_query.default.setStyle(node, {
+					inlineSize,
+					maxInlineSize: inlineSize,
+					minInlineSize: inlineSize
+				});
+			};
 			this.#popper = new _fr0st_ui.Popper(this.#menuNode, popperOptions);
 		}
 		/**
@@ -480,10 +481,10 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		#render() {
 			const id = (0, _fr0st_ui.generateId)("autocomplete");
 			for (const attribute of INPUT_ATTRIBUTES) this.#inputAttributes.set(attribute, _fr0st_query.default.getAttribute(this.node, attribute));
-			const style = { maxHeight: this.options.maxHeight };
+			const style = { maxBlockSize: this.options.maxHeight };
 			const window = this.node.ownerDocument.defaultView;
 			const duration = Number(this.options.duration);
-			if (!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches && Number.isFinite(duration) && duration >= 0) style["--ui-transition-duration"] = `${duration}ms`;
+			if (!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches && Number.isFinite(duration) && duration >= 0) style["--ui-autocomplete-transition-duration"] = `${duration}ms`;
 			this.#menuNode = _fr0st_query.default.create("ul", {
 				class: this.constructor.classes.menu,
 				style,
@@ -739,14 +740,14 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 				focus,
 				term
 			});
-			if (!_fr0st_query.default.isConnected(this.#menuNode)) {
-				this.#appendMenu();
-				_fr0st_query.default.css(this.#menuNode, "opacity");
-			}
+			if (!_fr0st_query.default.isConnected(this.#menuNode)) this.#appendMenu();
+			_fr0st_query.default.setStyle(this.#menuNode, { display: "block" });
+			_fr0st_query.default.css(this.#menuNode, "opacity");
 			this.#createPopper();
 			const transition = { direction: "in" };
 			this.#transition = transition;
 			_fr0st_query.default.addClass(this.#menuNode, this.constructor.classes.show);
+			_fr0st_query.default.setStyle(this.#menuNode, { display: "" });
 			_fr0st_query.default.setAttribute(this.node, { "aria-expanded": true });
 			this.node.ownerDocument.defaultView.requestAnimationFrame((_) => {
 				if (this.node && this.#transition === transition) this.update();

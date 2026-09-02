@@ -1,19 +1,29 @@
 // autocomplete
 $autocomplete-z-index: 1000 !default;
+$autocomplete-min-width: 10rem !default;
+$autocomplete-padding-x: .5rem !default;
+$autocomplete-padding-y: .5rem !default;
 $autocomplete-font-size: var(--ui-font-size) !default;
 $autocomplete-color: var(--ui-body-color) !default;
-$autocomplete-bg: var(--ui-body-bg) !default;
+$autocomplete-bg: rgb(from var(--ui-body-bg) r g b / .88) !default;
+$autocomplete-backdrop-filter: blur(.75rem) saturate(140%) !default;
 $autocomplete-border-width: var(--ui-border-width) !default;
-$autocomplete-border-color: var(--ui-border-color) !default;
+$autocomplete-border-color: var(--ui-border-color-translucent) !default;
+$autocomplete-border-radius: var(--ui-border-radius-xl) !default;
+$autocomplete-box-shadow: var(--ui-shadow) !default;
+$autocomplete-transition-duration: var(--ui-transition-duration) !default;
 
 $autocomplete-sm-font-size: var(--ui-font-size-sm) !default;
 $autocomplete-lg-font-size: var(--ui-font-size-lg) !default;
 
-$autocomplete-item-padding-x: .5rem !default;
-$autocomplete-item-padding-y: .25rem !default;
+$autocomplete-item-padding-x: 1rem !default;
+$autocomplete-item-padding-y: .5rem !default;
 $autocomplete-item-font-weight: 400 !default;
+$autocomplete-item-active-font-weight: 500 !default;
 $autocomplete-item-color: var(--ui-body-color) !default;
-$autocomplete-item-focus-color: var(--ui-primary-contrast) !default;
-$autocomplete-item-focus-bg: var(--ui-primary) !default;
-$autocomplete-item-active-color: var(--ui-body-color) !default;
-$autocomplete-item-active-bg: var(--ui-secondary-bg) !default;
+$autocomplete-item-focus-color: var(--ui-body-color) !default;
+$autocomplete-item-focus-bg: var(--ui-tertiary-bg) !default;
+$autocomplete-item-focus-box-shadow: inset 0 0 0 var(--ui-focus-ring-width) var(--ui-focus-ring-color) !default;
+$autocomplete-item-active-color: var(--ui-primary-contrast) !default;
+$autocomplete-item-active-bg: var(--ui-primary) !default;
+$autocomplete-info-color: var(--ui-secondary-color) !default;
