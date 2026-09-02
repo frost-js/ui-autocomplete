@@ -325,7 +325,7 @@ export default class Autocomplete extends BaseComponent {
 
         if (this.options.fullWidth) {
             popperOptions.beforeUpdate = (node, reference) => {
-                const width = $.width(reference, { boxSize: $.BORDER_BOX });
+                const width = $.rect(reference).width;
                 const inlineSize = `${width}px`;
                 $.setStyle(node, {
                     inlineSize,

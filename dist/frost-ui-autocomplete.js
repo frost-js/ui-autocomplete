@@ -271,7 +271,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 				minContact: this.options.minContact
 			};
 			if (this.options.fullWidth) popperOptions.beforeUpdate = (node, reference) => {
-				const inlineSize = `${_fr0st_query.default.width(reference, { boxSize: _fr0st_query.default.BORDER_BOX })}px`;
+				const inlineSize = `${_fr0st_query.default.rect(reference).width}px`;
 				_fr0st_query.default.setStyle(node, {
 					inlineSize,
 					maxInlineSize: inlineSize,

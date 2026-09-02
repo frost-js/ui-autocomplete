@@ -239,7 +239,7 @@ var Autocomplete = class extends BaseComponent {
 			minContact: this.options.minContact
 		};
 		if (this.options.fullWidth) popperOptions.beforeUpdate = (node, reference) => {
-			const inlineSize = `${$.width(reference, { boxSize: $.BORDER_BOX })}px`;
+			const inlineSize = `${$.rect(reference).width}px`;
 			$.setStyle(node, {
 				inlineSize,
 				maxInlineSize: inlineSize,
