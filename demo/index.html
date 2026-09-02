@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Frost UI Autocomplete Demo</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fr0st/ui@latest/dist/frost-ui.min.css">
+    <link rel="stylesheet" href="../dist/frost-ui-autocomplete.css">
+    <link rel="stylesheet" href="assets/demo.css">
+    <script src="https://cdn.jsdelivr.net/npm/@fr0st/ui@latest/dist/frost-ui-bundle.min.js"></script>
+    <script src="../dist/frost-ui-autocomplete.js"></script>
+    <script src="assets/demo.js"></script>
+</head>
+
+<body>
+    <header class="navbar bg-glass sticky-top border-bottom">
+        <div class="container d-flex align-items-center justify-content-between gap-3">
+            <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" href="#top">
+                <span class="badge bg-primary bg-gradient shadow-glow fs-5" aria-hidden="true">F</span>
+                <span>Autocomplete</span>
+            </a>
+            <div class="d-flex align-items-center gap-2">
+                <label class="small fw-bold mb-0" for="demo-theme">Theme</label>
+                <select class="input-outline input-sm w-auto rounded-pill" id="demo-theme" data-demo-theme>
+                    <option value="system">System</option>
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <main class="container py-4 py-lg-5" id="top">
+        <section class="card border-0 overflow-visible shadow-lg mb-5">
+            <div class="row g-0 align-items-stretch">
+                <div class="col-lg-7 d-flex align-items-center bg-ambient demo-hero-copy">
+                    <div class="p-4 p-md-5">
+                        <span class="badge bg-primary-subtle text-primary-subtle mb-3">Frost UI v3 component</span>
+                        <h1 class="display-2 mb-4">Find the right result, <span class="text-gradient">without the friction.</span></h1>
+                        <p class="lead text-body-secondary mb-4">Explore local matching, cancellable remote searches, infinite pagination, custom rendering, keyboard navigation, and flexible placement.</p>
+                        <nav class="d-flex flex-wrap gap-2" aria-label="Demo sections">
+                            <a class="btn btn-primary ripple" href="#data-sources">Try data sources</a>
+                            <a class="btn btn-secondary ripple" href="#methods-events">Use the API</a>
+                            <a class="btn btn-outline-primary ripple" href="#layout">Check layouts</a>
+                        </nav>
+                    </div>
+                </div>
+                <div class="col-lg-5 d-flex align-items-center bg-glass border-start">
+                    <div class="p-4 p-md-5 w-100">
+                        <small class="text-body-secondary d-block mb-2">Live city search</small>
+                        <label class="fw-bold" for="hero-autocomplete">Australian city</label>
+                        <div class="form-input mt-2">
+                            <input class="input-outline" id="hero-autocomplete" type="text" placeholder="Start typing or press Arrow Down" autocomplete="off">
+                        </div>
+                        <p class="form-text mb-0">Try “bri”, accents, arrow keys, Enter, or Escape.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-5" id="data-sources">
+            <header class="border-bottom pb-3 mb-4">
+                <span class="text-primary fw-bold">Data sources</span>
+                <h2 class="h3 mb-1">Local, remote, paginated, and failed requests</h2>
+                <p class="text-body-secondary mb-0">The asynchronous examples simulate a network so cancellation, loading, pagination, and error feedback remain easy to inspect.</p>
+            </header>
+            <div class="row g-4">
+                <div class="col-md-6 col-xl-3">
+                    <div class="card card-body h-100 p-4 overflow-visible">
+                        <span class="badge bg-primary-subtle text-primary-subtle align-self-start mb-3">Static</span>
+                        <h3 class="h5">Local languages</h3>
+                        <p class="text-body-secondary">Accent- and case-insensitive matching over a local array.</p>
+                        <label for="static-autocomplete">Language</label>
+                        <div class="form-input mt-2">
+                            <input class="input-outline" id="static-autocomplete" type="text" placeholder="Type “java”" autocomplete="off">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <div class="card card-body h-100 p-4 overflow-visible">
+                        <span class="badge bg-accent-subtle text-accent-subtle align-self-start mb-3">Async</span>
+                        <h3 class="h5">Remote people</h3>
+                        <p class="text-body-secondary">Rapid typing aborts stale simulated requests.</p>
+                        <label for="remote-autocomplete">Person</label>
+                        <div class="form-input mt-2">
+                            <input class="input-outline" id="remote-autocomplete" type="text" placeholder="Type a name" autocomplete="off">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <div class="card card-body h-100 p-4 overflow-visible">
+                        <span class="badge bg-success-subtle text-success-subtle align-self-start mb-3">Pagination</span>
+                        <h3 class="h5">Destinations</h3>
+                        <p class="text-body-secondary">Scroll the short menu to request the next page.</p>
+                        <label for="pagination-autocomplete">Destination</label>
+                        <div class="form-input mt-2">
+                            <input class="input-outline" id="pagination-autocomplete" type="text" placeholder="Type or press Arrow Down" autocomplete="off">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <div class="card card-body h-100 p-4 overflow-visible">
+                        <span class="badge bg-danger-subtle text-danger-subtle align-self-start mb-3">Failure</span>
+                        <h3 class="h5">Rejected request</h3>
+                        <p class="text-body-secondary">The localized error row appears after a rejected promise.</p>
+                        <label for="failure-autocomplete">Unreliable service</label>
+                        <div class="form-input mt-2">
+                            <input class="input-outline" id="failure-autocomplete" type="text" placeholder="Type anything" autocomplete="off">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-5" id="rendering">
+            <header class="border-bottom pb-3 mb-4">
+                <span class="text-accent fw-bold">Presentation</span>
+                <h2 class="h3 mb-1">Trusted DOM rendering and input sizes</h2>
+                <p class="text-body-secondary mb-0">A renderer can return a trusted node, while small and large Frost UI inputs automatically select their matching menu size.</p>
+            </header>
+            <div class="row g-4">
+                <div class="col-lg-5">
+                    <div class="card card-body h-100 p-4 overflow-visible">
+                        <h3 class="h5">Custom result rows</h3>
+                        <p class="text-body-secondary">Framework metadata is assembled with DOM APIs and safe text content.</p>
+                        <label for="render-autocomplete">Framework</label>
+                        <div class="form-input mt-2">
+                            <input class="input-outline" id="render-autocomplete" type="text" placeholder="Type or press Arrow Down" autocomplete="off">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-7">
+                    <div class="card card-body h-100 p-4 overflow-visible">
+                        <h3 class="h5">Small, default, and large</h3>
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-4">
+                                <label for="small-autocomplete">Small</label>
+                                <div class="form-input mt-2">
+                                    <input class="input-outline input-sm" id="small-autocomplete" type="text" placeholder="Small" autocomplete="off">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="default-autocomplete">Default</label>
+                                <div class="form-input mt-2">
+                                    <input class="input-outline" id="default-autocomplete" type="text" placeholder="Default" autocomplete="off">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="large-autocomplete">Large</label>
+                                <div class="form-input mt-2">
+                                    <input class="input-outline input-lg" id="large-autocomplete" type="text" placeholder="Large" autocomplete="off">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-5" id="methods-events">
+            <header class="border-bottom pb-3 mb-4">
+                <span class="text-success fw-bold">Programmatic API</span>
+                <h2 class="h3 mb-1">Methods and lifecycle events</h2>
+                <p class="text-body-secondary mb-0">Control one instance directly and inspect the ordered, namespaced events dispatched on its input.</p>
+            </header>
+            <div class="row g-4">
+                <div class="col-xl-7">
+                    <div class="card h-100 overflow-visible">
+                        <div class="card-body p-4">
+                            <label for="methods-autocomplete">Interactive instance</label>
+                            <div class="form-input mt-2 mb-4">
+                                <input class="input-outline" id="methods-autocomplete" type="text" placeholder="Use a method or type a color" autocomplete="off">
+                            </div>
+                            <div class="d-flex flex-wrap gap-2 mb-3">
+                                <button class="btn btn-primary ripple" data-demo-method="init" type="button">Init</button>
+                                <button class="btn btn-outline-primary ripple" data-demo-method="show" type="button">Show</button>
+                                <button class="btn btn-outline-primary ripple" data-demo-method="hide" type="button">Hide</button>
+                                <button class="btn btn-outline-primary ripple" data-demo-method="toggle" type="button">Toggle</button>
+                                <button class="btn btn-secondary ripple" data-demo-method="update" type="button">Update</button>
+                                <button class="btn btn-outline-danger ripple" data-demo-method="dispose" type="button">Dispose</button>
+                            </div>
+                            <output class="small text-body-secondary" id="method-output" aria-live="polite">Ready.</output>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-5">
+                    <div class="card h-100">
+                        <div class="card-header d-flex align-items-center justify-content-between gap-2">
+                            <strong>Event log</strong>
+                            <button class="btn btn-sm btn-secondary ripple" id="clear-events" type="button">Clear</button>
+                        </div>
+                        <div class="card-body demo-event-log overflow-y-auto" id="event-log" role="log" aria-live="polite">
+                            <p class="small text-body-secondary mb-0">Use the input to log lifecycle and change events.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-5" id="layout">
+            <header class="border-bottom pb-3 mb-4">
+                <span class="text-primary fw-bold">Layout and state</span>
+                <h2 class="h3 mb-1">Native states, RTL, and modal placement</h2>
+                <p class="text-body-secondary mb-0">Logical alignment, exact full-width sizing, and a custom append container keep the menu predictable in varied contexts.</p>
+            </header>
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <div class="card card-body h-100 p-4 overflow-visible">
+                        <h3 class="h5">Disabled and read-only</h3>
+                        <p class="text-body-secondary">Neither native state opens a menu.</p>
+                        <label for="disabled-autocomplete">Disabled</label>
+                        <div class="form-input mt-2 mb-3">
+                            <input class="input-outline" id="disabled-autocomplete" type="text" value="Unavailable" disabled>
+                        </div>
+                        <label for="readonly-autocomplete">Read-only</label>
+                        <div class="form-input mt-2">
+                            <input class="input-outline" id="readonly-autocomplete" type="text" value="Locked result" readonly>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card card-body h-100 p-4 overflow-visible" dir="rtl">
+                        <h3 class="h5">Right-to-left</h3>
+                        <p class="text-body-secondary">Start alignment and result text follow the inherited direction.</p>
+                        <label for="rtl-autocomplete">المدينة</label>
+                        <div class="form-input mt-2">
+                            <input class="input-outline" id="rtl-autocomplete" type="text" placeholder="ابدأ بالكتابة" autocomplete="off">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card card-body h-100 p-4">
+                        <h3 class="h5">Inside a modal</h3>
+                        <p class="text-body-secondary">The menu is appended to the modal body and matches the input border box.</p>
+                        <button class="btn btn-primary ripple mt-auto align-self-start" data-ui-toggle="modal" data-ui-target="#autocomplete-modal" type="button">Open modal example</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal" id="autocomplete-modal" tabindex="-1" role="dialog" aria-labelledby="autocomplete-modal-title" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2 class="modal-title" id="autocomplete-modal-title">Assign a teammate</h2>
+                            <button class="btn-close" data-ui-dismiss="modal" type="button" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body demo-modal-body">
+                            <p class="text-body-secondary">The menu remains positioned within this dialog while its results scroll.</p>
+                            <label for="modal-autocomplete">Teammate</label>
+                            <div class="form-input mt-2">
+                                <input class="input-outline" id="modal-autocomplete" type="text" placeholder="Type or press Arrow Down" autocomplete="off">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary ripple" data-ui-dismiss="modal" type="button">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="border-top bg-body-tertiary">
+        <div class="container py-4 d-flex flex-wrap justify-content-between gap-2">
+            <span class="text-body-secondary">Frost UI Autocomplete v4</span>
+            <a href="https://github.com/frost-js/ui-autocomplete">View source on GitHub</a>
+        </div>
+    </footer>
+</body>
+
+</html>

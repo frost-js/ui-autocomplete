@@ -1,0 +1,40 @@
+.demo-event-log {
+    height: 18rem;
+}
+
+.demo-event-log > :last-child {
+    margin-block-end: 0;
+}
+
+.demo-hero-copy {
+    border-start-start-radius: inherit;
+    border-end-start-radius: inherit;
+}
+
+.demo-modal-body {
+    min-height: 15rem;
+}
+
+.demo-result {
+    align-items: center;
+    display: flex;
+    gap: .75rem;
+    justify-content: space-between;
+}
+
+.demo-result-name {
+    font-weight: 600;
+}
+
+.demo-result-meta {
+    color: var(--ui-secondary-color);
+    font-size: var(--ui-font-size-sm);
+    white-space: nowrap;
+}
+
+@media (max-width: 991.98px) {
+    .demo-hero-copy {
+        border-start-end-radius: inherit;
+        border-end-start-radius: 0;
+    }
+}
