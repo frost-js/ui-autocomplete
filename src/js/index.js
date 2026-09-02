@@ -1,9 +1,17 @@
 import $ from '@fr0st/query';
 import { initComponent } from '@fr0st/ui';
 import Autocomplete from './autocomplete.js';
-import { _getDataInit, _getResultsInit } from './prototype/data.js';
-import { _events } from './prototype/events.js';
-import { _render, _renderInfo, _renderItem, _renderResults } from './prototype/render.js';
+
+/**
+ * Normalizes a value for case- and accent-insensitive matching.
+ * @param {string} value The value to normalize.
+ * @returns {string} The normalized value.
+ */
+const normalizeValue = (value) =>
+    value
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
 
 // Autocomplete default options
 Autocomplete.defaults = {
@@ -11,41 +19,32 @@ Autocomplete.defaults = {
         error: 'Error loading data.',
         loading: 'Loading..',
     },
-    data: null,
+    data: [],
     getResults: null,
     renderResult: (value) => value,
     sanitize: (input) => $.sanitize(input),
     isMatch(value, term) {
-        const escapedTerm = $._escapeRegExp(term);
-        const regExp = new RegExp(escapedTerm, 'i');
-
-        if (regExp.test(value)) {
-            return true;
-        }
-
-        const normalized = value.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-
-        return regExp.test(normalized);
+        return normalizeValue(value).includes(normalizeValue(term));
     },
     sortResults(a, b, term) {
-        const aLower = a.toLowerCase();
-        const bLower = b.toLowerCase();
+        const aNormalized = normalizeValue(a);
+        const bNormalized = normalizeValue(b);
+        const termNormalized = normalizeValue(term);
 
-        if (term) {
-            const diff = aLower.indexOf(term) - bLower.indexOf(term);
+        if (termNormalized) {
+            const diff = aNormalized.indexOf(termNormalized) - bNormalized.indexOf(termNormalized);
 
             if (diff) {
                 return diff;
             }
         }
 
-        return aLower.localeCompare(bLower);
+        return aNormalized.localeCompare(bNormalized);
     },
     minSearch: 1,
     debounce: 250,
     duration: 100,
     maxHeight: '250px',
-    menuSize: null,
     appendTo: null,
     fullWidth: false,
     placement: 'bottom',
@@ -61,21 +60,11 @@ Autocomplete.classes = {
     focus: 'focus',
     info: 'autocomplete-item text-body-secondary',
     item: 'autocomplete-item',
-    menu: 'autocomplete-menu list-unstyled',
+    menu: 'autocomplete-menu list-unstyled fade',
     menuSmall: 'autocomplete-menu-sm',
     menuLarge: 'autocomplete-menu-lg',
+    show: 'show',
 };
-
-// Autocomplete prototype
-const proto = Autocomplete.prototype;
-
-proto._events = _events;
-proto._getDataInit = _getDataInit;
-proto._getResultsInit = _getResultsInit;
-proto._render = _render;
-proto._renderInfo = _renderInfo;
-proto._renderItem = _renderItem;
-proto._renderResults = _renderResults;
 
 // Autocomplete init
 initComponent('autocomplete', Autocomplete);

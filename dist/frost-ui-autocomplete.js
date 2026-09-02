@@ -34,456 +34,765 @@ Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
 _fr0st_query = __toESM(_fr0st_query, 1);
 
 //#region src/js/autocomplete.js
-/**
-	* Autocomplete Class
-	* @class
+/** @import { NodeInput } from '@fr0st/query/src/helpers.js'; */
+	/** @import { Placement, Position } from '@fr0st/ui/src/js/popper/popper.js'; */
+	/**
+	* @typedef {object} AutocompleteLanguage
+	* @property {string} [error='Error loading data.'] The message shown when asynchronous results fail to load.
+	* @property {string} [loading='Loading..'] The message shown while asynchronous results are loading.
+	*/
+	/**
+	* @typedef {object} AutocompleteRequestOptions
+	* @property {number} offset The number of results already loaded.
+	* @property {string} [term] The current search term. This is omitted when the term is empty.
+	* @property {AbortSignal} signal A signal that is aborted when the request becomes stale.
+	*/
+	/**
+	* @typedef {object} AutocompleteResults
+	* @property {string[]} results The result values for the requested page.
+	* @property {boolean} [showMore=false] Whether another page can be requested.
+	*/
+	/**
+	* @callback AutocompleteGetResultsCallback
+	* @param {AutocompleteRequestOptions} options The request options.
+	* @returns {AutocompleteResults|PromiseLike<AutocompleteResults>} The results or a promise-like result.
+	*/
+	/**
+	* @callback AutocompleteMatchCallback
+	* @param {string} value The result value to test.
+	* @param {string} term The current search term.
+	* @returns {boolean} Whether the result matches the term.
+	*/
+	/**
+	* @callback AutocompleteRenderCallback
+	* @param {string} value The result value to render.
+	* @param {HTMLLIElement} item The option element that will contain the rendered result.
+	* @returns {string|Node|null|undefined} The rendered HTML string or DOM node.
+	* @description String output is passed through `sanitize` before being interpreted as HTML. DOM nodes are
+	* appended as-is, so callers must only return nodes containing trusted content.
+	*/
+	/**
+	* @callback AutocompleteSanitizeCallback
+	* @param {string} input The untrusted HTML string.
+	* @returns {string} The sanitized HTML string.
+	*/
+	/**
+	* @callback AutocompleteSortCallback
+	* @param {string} a The first result value.
+	* @param {string} b The second result value.
+	* @param {string} term The current search term.
+	* @returns {number} A negative number, zero, or a positive number for sort ordering.
+	*/
+	/**
+	* @typedef {object} AutocompleteOptions
+	* @property {AutocompleteLanguage} [lang] The localized status messages.
+	* @property {string[]|null} [data=null] The locally filtered result values.
+	* @property {AutocompleteGetResultsCallback|null} [getResults=null] The asynchronous results callback.
+	* @property {AutocompleteRenderCallback} [renderResult] The result rendering callback.
+	* @property {AutocompleteSanitizeCallback} [sanitize] The HTML sanitizing callback.
+	* @property {AutocompleteMatchCallback} [isMatch] The local result matching callback.
+	* @property {AutocompleteSortCallback} [sortResults] The local result sorting callback.
+	* @property {number} [minSearch=1] The minimum term length required before showing results.
+	* @property {number} [debounce=250] The asynchronous request debounce duration in milliseconds.
+	* @property {number} [duration=100] The menu transition duration in milliseconds.
+	* @property {string} [maxHeight='250px'] The maximum menu height.
+	* @property {NodeInput|null} [appendTo=null] The container to append the menu to, or `null` to place it after the input.
+	* @property {boolean} [fullWidth=false] Whether the menu should match the input width.
+	* @property {Placement} [placement='bottom'] The preferred menu placement.
+	* @property {Position} [position='start'] The menu alignment.
+	* @property {boolean} [fixed=false] Whether to preserve the preferred placement.
+	* @property {number} [spacing=0] The spacing between the input and menu.
+	* @property {number|false} [minContact=false] The minimum contact between the input and menu.
+	*/
+	/** @typedef {'first'|'last'|'preserve'} AutocompleteFocus */
+	/**
+	* @typedef {object} AutocompletePendingRequest
+	* @property {AbortController} controller The request abort controller.
+	* @property {AutocompleteFocus} focus The focus behavior when results render.
+	* @property {number} offset The requested result offset.
+	* @property {string} term The requested search term.
+	*/
+	var INPUT_ATTRIBUTES = [
+		"role",
+		"aria-controls",
+		"aria-autocomplete",
+		"aria-expanded",
+		"aria-haspopup",
+		"aria-activedescendant"
+	];
+	/**
+	* Adds local or asynchronous autocomplete results to a text input.
+	* @augments {BaseComponent<AutocompleteOptions>}
 	*/
 	var Autocomplete = class extends _fr0st_ui.BaseComponent {
+		/** @type {HTMLLIElement[]} */
+		#activeItems = [];
+		/** @type {string[]} */
+		#data = [];
+		/** @type {HTMLLIElement|null} */
+		#errorNode = null;
+		/** @type {Map<string, string|null>} */
+		#inputAttributes = /* @__PURE__ */ new Map();
+		#inputEvent = null;
+		/** @type {HTMLLIElement|null} */
+		#loaderNode = null;
+		#loadingScroll = false;
+		#loadResults = null;
+		/** @type {HTMLUListElement|null} */
+		#menuNode = null;
+		/** @type {Popper|null} */
+		#popper = null;
+		/** @type {AutocompletePendingRequest|null} */
+		#request = null;
+		#scrollEvent = null;
+		#showMore = false;
+		#term = "";
+		/** @type {{direction: 'in'|'out'}|null} */
+		#transition = null;
 		/**
-		* New Autocomplete constructor.
-		* @param {HTMLElement} node The input node.
-		* @param {object} [options] The options to create the Autocomplete with.
+		* Creates an Autocomplete.
+		* @param {HTMLInputElement} node The text input node.
+		* @param {AutocompleteOptions} [options] The Autocomplete options.
 		*/
 		constructor(node, options) {
 			super(node, options);
-			this._data = [];
-			this._activeItems = [];
-			this._getData = null;
-			this._getResults = null;
-			if (this._options.getResults) this._getResultsInit();
-			else if (this._options.data) {
-				this._data = this._options.data;
-				this._getDataInit();
+			if (Array.isArray(this.options.data)) this.#data = this.options.data.filter((value) => typeof value === "string");
+			if (this.#hasRemoteResults()) {
+				const debounce = Math.max(0, Number(this.options.debounce) || 0);
+				this.#loadResults = _fr0st_query.default._debounce((request) => this.#requestResults(request), debounce);
 			}
-			this._render();
-			this._events();
+			this.#render();
+			this.#events();
 		}
-		/**
-		* Dispose the Autocomplete.
-		*/
+		/** @inheritdoc */
 		dispose() {
-			if (this._popper) {
-				this._popper.dispose();
-				this._popper = null;
+			if (!this.node) return;
+			const node = this.node;
+			this.#transition = null;
+			this.#cancelRequest();
+			this.#inputEvent?.cancel();
+			this.#scrollEvent?.cancel();
+			if (this.#popper) {
+				this.#popper.dispose();
+				this.#popper = null;
 			}
-			_fr0st_query.default.remove(this._menuNode);
-			_fr0st_query.default.removeEvent(this._node, "keydown.ui.autocomplete");
-			_fr0st_query.default.removeEvent(this._node, "input.ui.autocomplete");
-			_fr0st_query.default.removeEvent(this._node, "blur.ui.autocomplete");
-			_fr0st_query.default.removeAttribute(this._node, "role");
-			_fr0st_query.default.removeAttribute(this._node, "aria-controls");
-			_fr0st_query.default.removeAttribute(this._node, "aria-autocomplete");
-			_fr0st_query.default.removeAttribute(this._node, "aria-expanded");
-			_fr0st_query.default.removeAttribute(this._node, "aria-activedescendent");
-			this._menuNode = null;
-			this._loader = null;
-			this._error = null;
-			this._data = null;
-			this._activeItems = null;
-			this._value = null;
-			this._requests = null;
-			this._popperOptions = null;
-			this._getData = null;
+			_fr0st_query.default.removeEvent(node, "blur.ui.autocomplete input.ui.autocomplete keydown.ui.autocomplete");
+			_fr0st_query.default.removeEvent(this.#menuNode, "mousedown.ui.autocomplete click.ui.autocomplete mouseover.ui.autocomplete scroll.ui.autocomplete");
+			_fr0st_query.default.remove(this.#menuNode);
+			for (const [attribute, value] of this.#inputAttributes) if (value === null) _fr0st_query.default.removeAttribute(node, attribute);
+			else _fr0st_query.default.setAttribute(node, attribute, value);
+			this.#activeItems = null;
+			this.#data = null;
+			this.#errorNode = null;
+			this.#inputAttributes = null;
+			this.#inputEvent = null;
+			this.#loaderNode = null;
+			this.#loadResults = null;
+			this.#menuNode = null;
+			this.#scrollEvent = null;
 			super.dispose();
 		}
 		/**
-		* Hide the Autocomplete.
+		* Hides the Autocomplete menu.
 		*/
 		hide() {
-			if (!_fr0st_query.default.isConnected(this._menuNode) || _fr0st_query.default.getDataset(this._menuNode, "uiAnimating") || !_fr0st_query.default.triggerOne(this._node, "hide.ui.autocomplete")) return;
-			_fr0st_query.default.setDataset(this._menuNode, { uiAnimating: "out" });
-			_fr0st_query.default.fadeOut(this._menuNode, { duration: this._options.duration }).then((_) => {
-				this._popper.dispose();
-				this._popper = null;
-				this._activeItems = [];
-				_fr0st_query.default.empty(this._menuNode);
-				_fr0st_query.default.detach(this._menuNode);
-				_fr0st_query.default.removeDataset(this._menuNode, "uiAnimating");
-				_fr0st_query.default.setAttribute(this._node, {
-					"aria-expanded": false,
-					"aria-activedescendent": ""
-				});
-				_fr0st_query.default.triggerEvent(this._node, "hidden.ui.autocomplete");
-			}).catch((_) => {
-				if (_fr0st_query.default.getDataset(this._menuNode, "uiAnimating") === "out") _fr0st_query.default.removeDataset(this._menuNode, "uiAnimating");
+			if (!this.node || !_fr0st_query.default.isConnected(this.#menuNode) || this.#transition?.direction === "out" || !_fr0st_query.default.triggerOne(this.node, "hide.ui.autocomplete")) return;
+			this.#cancelRequest();
+			const transition = { direction: "out" };
+			this.#transition = transition;
+			_fr0st_query.default.removeClass(this.#menuNode, this.constructor.classes.show);
+			_fr0st_query.default.setAttribute(this.node, { "aria-expanded": false });
+			this.#setActiveDescendant(null);
+			(0, _fr0st_ui.waitForTransition)(this.#menuNode, ["opacity"]).then((_) => {
+				if (!this.node || this.#transition !== transition) return;
+				this.#transition = null;
+				if (this.#popper) {
+					this.#popper.dispose();
+					this.#popper = null;
+				}
+				this.#resetMenu();
+				_fr0st_query.default.detach(this.#menuNode);
+				_fr0st_query.default.triggerEvent(this.node, "hidden.ui.autocomplete");
 			});
 		}
 		/**
-		* Show the Autocomplete.
+		* Shows the Autocomplete menu.
 		*/
 		show() {
-			if (_fr0st_query.default.is(this._node, ":disabled") || _fr0st_query.default.hasAttribute(this._node, "readonly") || _fr0st_query.default.isConnected(this._menuNode) || _fr0st_query.default.getDataset(this._menuNode, "uiAnimating") || !_fr0st_query.default.triggerOne(this._node, "show.ui.autocomplete")) return;
-			const term = _fr0st_query.default.getValue(this._node);
-			this._getData({ term });
-			_fr0st_query.default.setDataset(this._menuNode, { uiAnimating: "in" });
-			if (this._options.appendTo) _fr0st_query.default.append(this._options.appendTo, this._menuNode);
-			else _fr0st_query.default.after(this._node, this._menuNode);
-			this._popper = new _fr0st_ui.Popper(this._menuNode, this._popperOptions);
-			_fr0st_query.default.fadeIn(this._menuNode, { duration: this._options.duration }).then((_) => {
-				_fr0st_query.default.removeDataset(this._menuNode, "uiAnimating");
-				_fr0st_query.default.setAttribute(this._node, { "aria-expanded": true });
-				_fr0st_query.default.triggerEvent(this._node, "shown.ui.autocomplete");
-			}).catch((_) => {
-				if (_fr0st_query.default.getDataset(this._menuNode, "uiAnimating") === "in") _fr0st_query.default.removeDataset(this._menuNode, "uiAnimating");
-			});
+			this.#show("first");
 		}
 		/**
-		* Toggle the Autocomplete.
+		* Toggles the Autocomplete menu.
 		*/
 		toggle() {
-			if (_fr0st_query.default.isConnected(this._menuNode)) this.hide();
+			if (_fr0st_query.default.isConnected(this.#menuNode) && this.#transition?.direction !== "out") this.hide();
 			else this.show();
 		}
 		/**
-		* Update the Autocomplete position.
+		* Updates the Autocomplete menu position.
 		*/
 		update() {
-			if (this._popper) this._popper.update();
+			this.#popper?.update();
 		}
-	};
-
-//#endregion
-//#region src/js/prototype/data.js
-/**
-	* Initialize preloaded get data.
-	*/
-	function _getDataInit() {
-		this._getData = ({ term = null }) => {
-			this._activeItems = [];
-			_fr0st_query.default.empty(this._menuNode);
-			_fr0st_query.default.setAttribute(this._node, { "aria-activedescendent": "" });
-			if (this._options.minSearch && (!term || term.length < this._options.minSearch)) {
-				_fr0st_query.default.hide(this._menuNode);
-				this.update();
-				return;
+		/**
+		* Appends the menu to its configured container.
+		*/
+		#appendMenu() {
+			if (this.options.appendTo) try {
+				_fr0st_query.default.append(this.options.appendTo, this.#menuNode);
+			} catch {}
+			if (!_fr0st_query.default.isConnected(this.#menuNode)) _fr0st_query.default.after(this.node, this.#menuNode);
+		}
+		/**
+		* Cancels pending debounce work and the current asynchronous request.
+		*/
+		#cancelRequest() {
+			this.#loadResults?.cancel();
+			if (this.#request) {
+				this.#request.controller.abort();
+				this.#request = null;
 			}
-			_fr0st_query.default.show(this._menuNode);
-			const isMatch = this._options.isMatch.bind(this);
-			const sortResults = this._options.sortResults.bind(this);
-			const results = this._data.filter((value) => isMatch(value, term)).sort((a, b) => sortResults(a, b, term));
-			this._renderResults(results);
-			this.update();
-		};
-	}
-	/**
-	* Initialize get data from callback.
-	*/
-	function _getResultsInit() {
-		const load = _fr0st_query.default._debounce(({ offset, term }) => {
-			const options = { offset };
-			if (term) options.term = term;
-			const request = Promise.resolve(this._options.getResults(options));
-			request.then((response) => {
-				if (this._request !== request) return;
-				const newData = response.results;
-				if (!offset) {
-					this._data = newData;
-					_fr0st_query.default.empty(this._menuNode);
-				} else {
-					this._data.push(...newData);
-					_fr0st_query.default.detach(this._loader);
+			this.#loadingScroll = false;
+			this.#setBusy(false);
+		}
+		/**
+		* Creates the menu Popper.
+		*/
+		#createPopper() {
+			if (this.#popper) return;
+			const popperOptions = {
+				reference: this.node,
+				placement: this.options.placement,
+				position: this.options.position,
+				fixed: this.options.fixed,
+				spacing: this.options.spacing,
+				minContact: this.options.minContact
+			};
+			if (this.options.fullWidth) {
+				popperOptions.beforeUpdate = (node) => {
+					_fr0st_query.default.setStyle(node, { width: "" });
+				};
+				popperOptions.afterUpdate = (node, reference) => {
+					const width = _fr0st_query.default.width(reference, { boxSize: _fr0st_query.default.BORDER_BOX });
+					_fr0st_query.default.setStyle(node, { width: `${width}px` });
+				};
+			}
+			this.#popper = new _fr0st_ui.Popper(this.#menuNode, popperOptions);
+		}
+		/**
+		* Attaches input and menu events.
+		*/
+		#events() {
+			_fr0st_query.default.addEventDelegate(this.#menuNode, "mousedown.ui.autocomplete", "[data-ui-action=\"select\"]", (e) => {
+				if (e.button === 0) e.preventDefault();
+			});
+			_fr0st_query.default.addEventDelegate(this.#menuNode, "click.ui.autocomplete", "[data-ui-action=\"select\"]", (e) => {
+				if (e.button !== 0) return;
+				e.preventDefault();
+				this.#selectItem(e.currentTarget);
+			});
+			_fr0st_query.default.addEventDelegate(this.#menuNode, "mouseover.ui.autocomplete", "[data-ui-action=\"select\"]", (e) => this.#focusItem(e.currentTarget));
+			_fr0st_query.default.addEvent(this.node, "blur.ui.autocomplete", (_) => {
+				this.hide();
+			});
+			this.#inputEvent = _fr0st_query.default._debounce((_) => {
+				if (!this.node || !_fr0st_query.default.isSame(this.node, this.node.ownerDocument.activeElement)) return;
+				if (!_fr0st_query.default.isConnected(this.#menuNode) || this.#transition?.direction === "out") {
+					this.#show("first");
+					return;
 				}
-				this._showMore = response.showMore;
-				this._renderResults(newData);
-				this._request = null;
-			}).catch((_) => {
-				if (this._request !== request) return;
-				_fr0st_query.default.detach(this._loader);
-				_fr0st_query.default.append(this._menuNode, this._error);
-				this._request = null;
-			}).finally((_) => {
-				this._loadingScroll = false;
-				this.update();
+				if (!this.#load(this.#getTerm(), "first")) this.hide();
 			});
-			this._request = request;
-		}, this._options.debounce);
-		this._getData = ({ offset = 0, term = null }) => {
-			if (this._request && this._request.cancel) this._request.cancel();
-			this._request = null;
-			if (!offset) {
-				this._activeItems = [];
-				_fr0st_query.default.setAttribute(this._node, { "aria-activedescendent": "" });
-				const children = _fr0st_query.default.children(this._menuNode, (node) => !_fr0st_query.default.isSame(node, this._loader));
-				_fr0st_query.default.detach(children);
-			} else _fr0st_query.default.detach(this._error);
-			if (this._options.minSearch && (!term || term.length < this._options.minSearch)) {
-				_fr0st_query.default.hide(this._menuNode);
-				this.update();
-				return;
-			}
-			_fr0st_query.default.show(this._menuNode);
-			const lastChild = _fr0st_query.default.child(this._menuNode, ":last-child");
-			if (!lastChild || !_fr0st_query.default.isSame(lastChild, this._loader)) _fr0st_query.default.append(this._menuNode, this._loader);
-			load({
-				offset,
-				term
-			});
-		};
-	}
-
-//#endregion
-//#region src/js/prototype/events.js
-/**
-	* Attach events for the Autocomplete.
-	*/
-	function _events() {
-		_fr0st_query.default.addEventDelegate(this._menuNode, "contextmenu.ui.autocomplete", "[data-ui-action=\"select\"]", (e) => {
-			e.preventDefault();
-		});
-		_fr0st_query.default.addEventDelegate(this._menuNode, "mousedown.ui.autocomplete", "[data-ui-action=\"select\"]", (e) => {
-			e.preventDefault();
-		});
-		_fr0st_query.default.addEvent(this._node, "blur.ui.autocomplete", (_) => {
-			if (_fr0st_query.default.isSame(this._node, document.activeElement)) return;
-			_fr0st_query.default.stop(this._menuNode);
-			_fr0st_query.default.removeDataset(this._menuNode, "uiAnimating");
-			this.hide();
-		});
-		_fr0st_query.default.addEventDelegate(this._menuNode, "click.ui.autocomplete", "[data-ui-action=\"select\"]", (e) => {
-			e.preventDefault();
-			const value = _fr0st_query.default.getDataset(e.currentTarget, "uiValue");
-			if (value !== _fr0st_query.default.getValue(this._node)) {
-				_fr0st_query.default.setValue(this._node, value);
-				_fr0st_query.default.triggerEvent(this._node, "change.ui.autocomplete");
-			}
-			this.hide();
-			_fr0st_query.default.focus(this._node);
-		});
-		_fr0st_query.default.addEventDelegate(this._menuNode, "mouseover.ui.autocomplete", "[data-ui-action=\"select\"]", _fr0st_query.default.debounce((e) => {
-			const focusedNode = _fr0st_query.default.findOne("[data-ui-focus]", this._menuNode);
-			_fr0st_query.default.removeClass(focusedNode, this.constructor.classes.focus);
-			_fr0st_query.default.removeDataset(focusedNode, "uiFocus");
-			_fr0st_query.default.addClass(e.currentTarget, this.constructor.classes.focus);
-			_fr0st_query.default.setDataset(e.currentTarget, { uiFocus: true });
-			const id = _fr0st_query.default.getAttribute(e.currentTarget, "id");
-			_fr0st_query.default.setAttribute(this._node, { "aria-activedescendent": id });
-		}));
-		_fr0st_query.default.addEvent(this._node, "input.ui.autocomplete", _fr0st_query.default.debounce((_) => {
-			if (!_fr0st_query.default.isConnected(this._menuNode)) this.show();
-			else {
-				const term = _fr0st_query.default.getValue(this._node);
-				this._getData({ term });
-			}
-		}));
-		_fr0st_query.default.addEvent(this._node, "keydown.ui.autocomplete", (e) => {
-			if (![
-				"ArrowDown",
-				"ArrowUp",
-				"Enter",
-				"Escape",
-				"NumpadEnter"
-			].includes(e.code)) return;
-			const focusedNode = _fr0st_query.default.findOne("[data-ui-focus]", this._menuNode);
-			switch (e.code) {
-				case "Enter":
-				case "NumpadEnter":
-					if (focusedNode) {
-						const value = _fr0st_query.default.getDataset(focusedNode, "uiValue");
-						if (value !== _fr0st_query.default.getValue(this._node)) {
-							_fr0st_query.default.setValue(this._node, value);
-							_fr0st_query.default.triggerEvent(this._node, "change.ui.autocomplete");
-						}
-						this.hide();
+			_fr0st_query.default.addEvent(this.node, "input.ui.autocomplete", this.#inputEvent);
+			_fr0st_query.default.addEvent(this.node, "keydown.ui.autocomplete", (e) => {
+				if (![
+					"ArrowDown",
+					"ArrowUp",
+					"Enter",
+					"Escape"
+				].includes(e.key)) return;
+				const open = _fr0st_query.default.isConnected(this.#menuNode) && this.#transition?.direction !== "out";
+				if (e.key === "Enter") {
+					const focusedNode = this.#getFocusedItem();
+					if (open && focusedNode) {
+						e.preventDefault();
+						this.#selectItem(focusedNode);
 					}
 					return;
-				case "Escape":
-					if (_fr0st_query.default.isConnected(this._menuNode)) {
+				}
+				if (e.key === "Escape") {
+					if (open) {
+						e.preventDefault();
 						e.stopPropagation();
 						this.hide();
 					}
 					return;
-			}
-			e.preventDefault();
-			if (!_fr0st_query.default.isConnected(this._menuNode)) {
-				this.show();
-				return;
-			}
-			let focusNode;
-			if (!focusedNode) focusNode = this._activeItems[0];
-			else {
-				let focusIndex = this._activeItems.indexOf(focusedNode);
-				switch (e.code) {
-					case "ArrowDown":
-						focusIndex++;
-						break;
-					case "ArrowUp": focusIndex--;
 				}
-				focusNode = this._activeItems[focusIndex];
+				e.preventDefault();
+				if (!open) {
+					this.#show(e.key === "ArrowUp" ? "last" : "first");
+					return;
+				}
+				const focusedNode = this.#getFocusedItem();
+				if (!focusedNode) {
+					if (this.#activeItems.length) {
+						const focusNode = e.key === "ArrowUp" ? this.#activeItems.at(-1) : this.#activeItems[0];
+						this.#focusItem(focusNode, { scroll: true });
+					} else if (!this.#request) this.#load(this.#getTerm(), e.key === "ArrowUp" ? "last" : "first");
+					return;
+				}
+				const currentIndex = this.#activeItems.indexOf(focusedNode);
+				const change = e.key === "ArrowUp" ? -1 : 1;
+				const focusNode = this.#activeItems[currentIndex + change];
+				if (focusNode) this.#focusItem(focusNode, { scroll: true });
+			});
+			if (this.#hasRemoteResults()) {
+				this.#scrollEvent = _fr0st_query.default._throttle((_) => {
+					if (!this.node || this.#loadingScroll || this.#request || !this.#showMore) return;
+					const height = _fr0st_query.default.height(this.#menuNode);
+					const scrollHeight = _fr0st_query.default.height(this.#menuNode, { boxSize: _fr0st_query.default.SCROLL_BOX });
+					if (_fr0st_query.default.getScrollY(this.#menuNode) < scrollHeight - height - height / 4) return;
+					const term = this.#getTerm();
+					if (term !== this.#term) {
+						this.#load(term, "first");
+						return;
+					}
+					this.#requestData({
+						focus: "preserve",
+						offset: this.#data.length,
+						term
+					});
+				}, 250, { leading: false });
+				_fr0st_query.default.addEvent(this.#menuNode, "scroll.ui.autocomplete", this.#scrollEvent);
 			}
-			if (!focusedNode && !focusNode && !this._request) {
-				const term = _fr0st_query.default.getValue(this._node);
-				this._getData({ term });
+		}
+		/**
+		* Focuses an option and updates the active descendant.
+		* @param {HTMLLIElement} item The option to focus.
+		* @param {object} [options] The focus options.
+		* @param {boolean} [options.scroll=false] Whether to scroll the option into view.
+		*/
+		#focusItem(item, { scroll = false } = {}) {
+			if (!item || !this.#activeItems.includes(item)) return;
+			const focusedNode = this.#getFocusedItem();
+			if (focusedNode && !_fr0st_query.default.isSame(focusedNode, item)) {
+				_fr0st_query.default.removeClass(focusedNode, this.constructor.classes.focus);
+				_fr0st_query.default.removeDataset(focusedNode, "uiFocus");
+			}
+			_fr0st_query.default.addClass(item, this.constructor.classes.focus);
+			_fr0st_query.default.setDataset(item, { uiFocus: true });
+			this.#setActiveDescendant(_fr0st_query.default.getAttribute(item, "id"));
+			if (!scroll) return;
+			const menuScrollY = _fr0st_query.default.getScrollY(this.#menuNode);
+			const menuRect = _fr0st_query.default.rect(this.#menuNode, { offset: true });
+			const itemRect = _fr0st_query.default.rect(item, { offset: true });
+			if (itemRect.top < menuRect.top) _fr0st_query.default.setScrollY(this.#menuNode, menuScrollY + itemRect.top - menuRect.top);
+			else if (itemRect.bottom > menuRect.bottom) _fr0st_query.default.setScrollY(this.#menuNode, menuScrollY + itemRect.bottom - menuRect.bottom);
+		}
+		/**
+		* Gets the currently focused option.
+		* @returns {HTMLLIElement|null} The focused option, or `null`.
+		*/
+		#getFocusedItem() {
+			return this.#activeItems.find((item) => _fr0st_query.default.hasDataset(item, "uiFocus")) || null;
+		}
+		/**
+		* Gets sorted local results for a term.
+		* @param {string} term The current search term.
+		* @returns {string[]} The matching results.
+		*/
+		#getLocalResults(term) {
+			return this.#data.filter((value) => {
+				try {
+					return Boolean(this.options.isMatch.call(this, value, term));
+				} catch {
+					return false;
+				}
+			}).sort((a, b) => {
+				try {
+					return Number(this.options.sortResults.call(this, a, b, term)) || 0;
+				} catch {
+					return a.localeCompare(b);
+				}
+			});
+		}
+		/**
+		* Gets the current input term.
+		* @returns {string} The current input term.
+		*/
+		#getTerm() {
+			const value = _fr0st_query.default.getValue(this.node);
+			return value === null || value === void 0 ? "" : `${value}`;
+		}
+		/**
+		* Checks whether an asynchronous results callback is configured.
+		* @returns {boolean} Whether results load asynchronously.
+		*/
+		#hasRemoteResults() {
+			return typeof this.options.getResults === "function";
+		}
+		/**
+		* Checks whether a request token is still active and safe to render.
+		* @param {AutocompletePendingRequest} request The request token to check.
+		* @returns {boolean} Whether the request is current.
+		*/
+		#isCurrentRequest(request) {
+			return Boolean(this.node && this.#request === request && !request.controller.signal.aborted && request.term === this.#term && _fr0st_query.default.isConnected(this.#menuNode));
+		}
+		/**
+		* Loads results for a term.
+		* @param {string} term The current search term.
+		* @param {AutocompleteFocus} focus The initial focus behavior.
+		* @returns {boolean} Whether the menu has content or pending content to display.
+		*/
+		#load(term, focus) {
+			if (!this.#meetsMinimumSearch(term)) {
+				this.#cancelRequest();
+				this.#term = term;
+				this.#resetMenu();
+				return false;
+			}
+			if (this.#hasRemoteResults()) {
+				this.#requestData({
+					focus,
+					term
+				});
+				return true;
+			}
+			this.#term = term;
+			const results = this.#getLocalResults(term);
+			this.#renderResults(results, { focus });
+			this.update();
+			return results.length > 0;
+		}
+		/**
+		* Checks whether a term meets the configured minimum length.
+		* @param {string} term The current search term.
+		* @returns {boolean} Whether results can be shown.
+		*/
+		#meetsMinimumSearch(term) {
+			const minimum = Math.max(0, Number(this.options.minSearch) || 0);
+			return term.length >= minimum;
+		}
+		/**
+		* Renders the menu and applies combobox attributes to the input.
+		*/
+		#render() {
+			const id = (0, _fr0st_ui.generateId)("autocomplete");
+			for (const attribute of INPUT_ATTRIBUTES) this.#inputAttributes.set(attribute, _fr0st_query.default.getAttribute(this.node, attribute));
+			const style = { maxHeight: this.options.maxHeight };
+			const window = this.node.ownerDocument.defaultView;
+			const duration = Number(this.options.duration);
+			if (!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches && Number.isFinite(duration) && duration >= 0) style["--ui-transition-duration"] = `${duration}ms`;
+			this.#menuNode = _fr0st_query.default.create("ul", {
+				class: this.constructor.classes.menu,
+				style,
+				attributes: {
+					"id": id,
+					"role": "listbox",
+					"aria-busy": false
+				}
+			});
+			if (_fr0st_query.default.is(this.node, ".input-sm")) _fr0st_query.default.addClass(this.#menuNode, this.constructor.classes.menuSmall);
+			else if (_fr0st_query.default.is(this.node, ".input-lg")) _fr0st_query.default.addClass(this.#menuNode, this.constructor.classes.menuLarge);
+			if (this.#hasRemoteResults()) {
+				this.#loaderNode = this.#renderInfo(this.options.lang.loading);
+				this.#errorNode = this.#renderInfo(this.options.lang.error);
+			}
+			_fr0st_query.default.setAttribute(this.node, {
+				"role": "combobox",
+				"aria-controls": id,
+				"aria-autocomplete": "list",
+				"aria-expanded": false,
+				"aria-haspopup": "listbox"
+			});
+			_fr0st_query.default.removeAttribute(this.node, "aria-activedescendant");
+		}
+		/**
+		* Renders an informational listbox option.
+		* @param {string} text The status text to render.
+		* @returns {HTMLLIElement} The status option.
+		*/
+		#renderInfo(text) {
+			return _fr0st_query.default.create("li", {
+				html: this.#sanitize(`${text ?? ""}`),
+				class: this.constructor.classes.info,
+				attributes: {
+					"role": "option",
+					"aria-disabled": true,
+					"aria-live": "polite"
+				}
+			});
+		}
+		/**
+		* Renders a selectable result option.
+		* @param {string} value The result value.
+		* @returns {HTMLLIElement} The result option.
+		*/
+		#renderItem(value) {
+			const active = this.#getTerm() === value;
+			const item = _fr0st_query.default.create("li", {
+				class: this.constructor.classes.item,
+				attributes: {
+					"id": (0, _fr0st_ui.generateId)("autocomplete-item"),
+					"role": "option",
+					"aria-label": value,
+					"aria-selected": active
+				},
+				dataset: {
+					uiAction: "select",
+					uiValue: value
+				}
+			});
+			if (active) _fr0st_query.default.addClass(item, this.constructor.classes.active);
+			let content;
+			try {
+				content = this.options.renderResult.call(this, value, item);
+			} catch {
+				content = value;
+			}
+			if (typeof content === "string") _fr0st_query.default.setHTML(item, this.#sanitize(content));
+			else if (content instanceof this.node.ownerDocument.defaultView.Node && !_fr0st_query.default.isSame(item, content)) _fr0st_query.default.append(item, content);
+			return item;
+		}
+		/**
+		* Renders an asynchronous loading error.
+		* @param {AutocompletePendingRequest} request The failed request.
+		*/
+		#renderRequestError(request) {
+			if (!this.#isCurrentRequest(request)) return;
+			this.#showMore = false;
+			_fr0st_query.default.detach(this.#loaderNode);
+			_fr0st_query.default.detach(this.#errorNode);
+			_fr0st_query.default.append(this.#menuNode, this.#errorNode);
+		}
+		/**
+		* Renders a successful asynchronous response.
+		* @param {AutocompletePendingRequest} request The completed request.
+		* @param {AutocompleteResults} response The response to render.
+		*/
+		#renderResponse(request, response) {
+			if (!this.#isCurrentRequest(request)) return;
+			if (!response || typeof response !== "object" || !Array.isArray(response.results) || response.results.some((value) => typeof value !== "string")) throw new TypeError("Autocomplete results must contain a string results array.");
+			const results = response.results;
+			this.#showMore = Boolean(response.showMore) && results.length > 0;
+			if (request.offset) {
+				this.#data.push(...results);
+				_fr0st_query.default.detach(this.#loaderNode);
+				if (results.length) this.#renderResults(results, {
+					append: true,
+					focus: request.focus
+				});
+			} else {
+				this.#data = [...results];
+				if (results.length) this.#renderResults(results, { focus: request.focus });
+				else this.hide();
+			}
+		}
+		/**
+		* Renders a page of results.
+		* @param {string[]} results The result values to render.
+		* @param {object} [options] The rendering options.
+		* @param {boolean} [options.append=false] Whether to append to the current results.
+		* @param {AutocompleteFocus} [options.focus='first'] The initial focus behavior.
+		*/
+		#renderResults(results, { append = false, focus = "first" } = {}) {
+			const focusedNode = append ? this.#getFocusedItem() : null;
+			if (append) {
+				_fr0st_query.default.detach(this.#loaderNode);
+				_fr0st_query.default.detach(this.#errorNode);
+			} else this.#resetMenu();
+			const newItems = results.map((value) => this.#renderItem(value));
+			this.#activeItems.push(...newItems);
+			_fr0st_query.default.append(this.#menuNode, newItems);
+			if (focusedNode) this.#focusItem(focusedNode);
+			else if (focus !== "preserve" && this.#activeItems.length) {
+				const focusNode = focus === "last" ? this.#activeItems.at(-1) : this.#activeItems[0];
+				this.#focusItem(focusNode);
+			} else this.#setActiveDescendant(null);
+		}
+		/**
+		* Requests a page of asynchronous results.
+		* @param {object} options The request options.
+		* @param {AutocompleteFocus} options.focus The focus behavior when results render.
+		* @param {number} [options.offset=0] The result offset.
+		* @param {string} options.term The current search term.
+		*/
+		#requestData({ focus, offset = 0, term }) {
+			if (!this.node || offset && (this.#request || term !== this.#term)) return;
+			if (!offset) {
+				this.#cancelRequest();
+				this.#term = term;
+				this.#data = [];
+				this.#showMore = false;
+				this.#resetMenu();
+			} else _fr0st_query.default.detach(this.#errorNode);
+			const request = {
+				controller: new AbortController(),
+				focus,
+				offset,
+				term
+			};
+			this.#request = request;
+			this.#loadingScroll = offset > 0;
+			this.#setBusy(true);
+			if (!_fr0st_query.default.isSame(this.#menuNode.lastElementChild, this.#loaderNode)) _fr0st_query.default.append(this.#menuNode, this.#loaderNode);
+			this.#loadResults(request);
+		}
+		/**
+		* Invokes the asynchronous results callback for a request token.
+		* @param {AutocompletePendingRequest} request The pending request.
+		*/
+		#requestResults(request) {
+			Promise.resolve().then((_) => {
+				if (!this.#isCurrentRequest(request)) return;
+				const options = {
+					offset: request.offset,
+					signal: request.controller.signal
+				};
+				if (request.term) options.term = request.term;
+				return this.options.getResults.call(this, options);
+			}).then((response) => {
+				if (this.#isCurrentRequest(request)) this.#renderResponse(request, response);
+			}).catch((_) => {
+				if (!request.controller.signal.aborted) this.#renderRequestError(request);
+			}).finally((_) => {
+				if (!this.#isCurrentRequest(request)) return;
+				this.#request = null;
+				this.#loadingScroll = false;
+				this.#setBusy(false);
+				this.update();
+			});
+		}
+		/**
+		* Resets all rendered menu content and focus state.
+		*/
+		#resetMenu() {
+			this.#activeItems = [];
+			_fr0st_query.default.empty(this.#menuNode);
+			this.#setActiveDescendant(null);
+			this.#setBusy(false);
+		}
+		/**
+		* Sanitizes a rendered string and falls back to the built-in sanitizer if the callback fails.
+		* @param {string} input The input HTML string.
+		* @returns {string} The sanitized HTML string.
+		*/
+		#sanitize(input) {
+			try {
+				return `${this.options.sanitize.call(this, input)}`;
+			} catch {
+				return _fr0st_query.default.sanitize(input);
+			}
+		}
+		/**
+		* Selects a result option.
+		* @param {HTMLLIElement} item The option to select.
+		*/
+		#selectItem(item) {
+			if (!this.node || !item || !this.#activeItems.includes(item)) return;
+			const value = item.dataset.uiValue;
+			if (value !== this.#getTerm()) {
+				_fr0st_query.default.setValue(this.node, value);
+				_fr0st_query.default.triggerEvent(this.node, "change.ui.autocomplete");
+			}
+			this.hide();
+			_fr0st_query.default.focus(this.node);
+		}
+		/**
+		* Updates the input's active descendant.
+		* @param {string|null} id The focused option ID, or `null` to clear it.
+		*/
+		#setActiveDescendant(id) {
+			if (!this.node) return;
+			if (id) _fr0st_query.default.setAttribute(this.node, { "aria-activedescendant": id });
+			else _fr0st_query.default.removeAttribute(this.node, "aria-activedescendant");
+		}
+		/**
+		* Updates the menu's asynchronous busy state.
+		* @param {boolean} busy Whether an asynchronous request is active.
+		*/
+		#setBusy(busy) {
+			if (this.#menuNode) _fr0st_query.default.setAttribute(this.#menuNode, { "aria-busy": busy });
+		}
+		/**
+		* Shows the Autocomplete menu with the requested initial focus behavior.
+		* @param {AutocompleteFocus} focus The initial focus behavior.
+		*/
+		#show(focus) {
+			if (!this.node || this.node.disabled || this.node.readOnly || _fr0st_query.default.isConnected(this.#menuNode) && this.#transition?.direction !== "out") return;
+			const term = this.#getTerm();
+			if (!this.#meetsMinimumSearch(term)) {
+				this.#cancelRequest();
 				return;
 			}
-			if (!focusNode) return;
-			_fr0st_query.default.removeClass(focusedNode, this.constructor.classes.focus);
-			_fr0st_query.default.removeDataset(focusedNode, "uiFocus");
-			_fr0st_query.default.addClass(focusNode, this.constructor.classes.focus);
-			_fr0st_query.default.setDataset(focusNode, { uiFocus: true });
-			const id = _fr0st_query.default.getAttribute(focusNode, "id");
-			_fr0st_query.default.setAttribute(this._node, { "aria-activedescendent": id });
-			const itemsScrollY = _fr0st_query.default.getScrollY(this._menuNode);
-			const itemsRect = _fr0st_query.default.rect(this._menuNode, { offset: true });
-			const nodeRect = _fr0st_query.default.rect(focusNode, { offset: true });
-			if (nodeRect.top < itemsRect.top) _fr0st_query.default.setScrollY(this._menuNode, itemsScrollY + nodeRect.top - itemsRect.top);
-			else if (nodeRect.bottom > itemsRect.bottom) _fr0st_query.default.setScrollY(this._menuNode, itemsScrollY + nodeRect.bottom - itemsRect.bottom);
-		});
-		if (this._options.getResults) _fr0st_query.default.addEvent(this._menuNode, "scroll.ui.autocomplete", _fr0st_query.default._throttle((_) => {
-			if (this._loadingScroll || !this._showMore) return;
-			const height = _fr0st_query.default.height(this._menuNode);
-			const scrollHeight = _fr0st_query.default.height(this._menuNode, { boxSize: _fr0st_query.default.SCROLL_BOX });
-			if (_fr0st_query.default.getScrollY(this._menuNode) >= scrollHeight - height - height / 4) {
-				const term = _fr0st_query.default.getValue(this._node);
-				const offset = this._data.length;
-				this._loadingScroll = true;
-				this._getData({
-					term,
-					offset
-				});
+			const localResults = this.#hasRemoteResults() ? null : this.#getLocalResults(term);
+			if (localResults && !localResults.length) {
+				this.#resetMenu();
+				return;
 			}
-		}, 250, { leading: false }));
-	}
-
-//#endregion
-//#region src/js/prototype/render.js
-/**
-	* Render the toggle element.
-	*/
-	function _render() {
-		const id = (0, _fr0st_ui.generateId)("autocomplete");
-		this._menuNode = _fr0st_query.default.create("ul", {
-			class: this.constructor.classes.menu,
-			style: { maxHeight: this._options.maxHeight },
-			attributes: {
-				id,
-				role: "listbox"
+			if (!_fr0st_query.default.triggerOne(this.node, "show.ui.autocomplete")) return;
+			if (localResults) {
+				this.#term = term;
+				this.#renderResults(localResults, { focus });
+			} else this.#requestData({
+				focus,
+				term
+			});
+			if (!_fr0st_query.default.isConnected(this.#menuNode)) {
+				this.#appendMenu();
+				_fr0st_query.default.css(this.#menuNode, "opacity");
 			}
-		});
-		if (_fr0st_query.default.is(this._node, ".input-sm")) _fr0st_query.default.addClass(this._menuNode, this.constructor.classes.menuSmall);
-		else if (_fr0st_query.default.is(this._node, ".input-lg")) _fr0st_query.default.addClass(this._menuNode, this.constructor.classes.menuLarge);
-		if (this._options.getResults) {
-			this._loader = this._renderInfo(this._options.lang.loading);
-			this._error = this._renderInfo(this._options.lang.error);
+			this.#createPopper();
+			const transition = { direction: "in" };
+			this.#transition = transition;
+			_fr0st_query.default.addClass(this.#menuNode, this.constructor.classes.show);
+			_fr0st_query.default.setAttribute(this.node, { "aria-expanded": true });
+			this.node.ownerDocument.defaultView.requestAnimationFrame((_) => {
+				if (this.node && this.#transition === transition) this.update();
+			});
+			(0, _fr0st_ui.waitForTransition)(this.#menuNode, ["opacity"]).then((_) => {
+				if (!this.node || this.#transition !== transition) return;
+				this.#transition = null;
+				_fr0st_query.default.triggerEvent(this.node, "shown.ui.autocomplete");
+			});
 		}
-		this._popperOptions = {
-			reference: this._node,
-			placement: this._options.placement,
-			position: this._options.position,
-			fixed: this._options.fixed,
-			spacing: this._options.spacing,
-			minContact: this._options.minContact
-		};
-		if (this._options.fullWidth) {
-			this._popperOptions.beforeUpdate = (node) => {
-				_fr0st_query.default.setStyle(node, { width: "" });
-			};
-			this._popperOptions.afterUpdate = (node, reference) => {
-				const width = _fr0st_query.default.width(reference, { boxSize: _fr0st_query.default.BORDER_BOX });
-				_fr0st_query.default.setStyle(node, { width: `${width}px` });
-			};
-		}
-		_fr0st_query.default.setAttribute(this._node, {
-			"role": "combobox",
-			"aria-controls": id,
-			"aria-autocomplete": "list",
-			"aria-expanded": false,
-			"aria-activedescendent": ""
-		});
-	}
-	/**
-	* Render an information item.
-	* @param {string} text The text to render.
-	* @returns {HTMLElement} The information item.
-	*/
-	function _renderInfo(text) {
-		return _fr0st_query.default.create("div", {
-			html: this._options.sanitize(text),
-			class: this.constructor.classes.info
-		});
-	}
-	/**
-	* Render an item.
-	* @param {string} value The value to render.
-	* @returns {HTMLElement} The item element.
-	*/
-	function _renderItem(value) {
-		const id = (0, _fr0st_ui.generateId)("autocomplete-item");
-		const active = _fr0st_query.default.getValue(this._node) == value;
-		const element = _fr0st_query.default.create("li", {
-			class: this.constructor.classes.item,
-			attributes: {
-				id,
-				"role": "option",
-				"aria-label": value,
-				"aria-selected": active
-			},
-			dataset: {
-				uiAction: "select",
-				uiValue: value
-			}
-		});
-		this._activeItems.push(element);
-		if (active) _fr0st_query.default.addClass(element, this.constructor.classes.active);
-		const content = this._options.renderResult.bind(this)(value, element);
-		if (_fr0st_query.default._isString(content)) _fr0st_query.default.setHTML(element, this._options.sanitize(content));
-		else if (_fr0st_query.default._isElement(content) && !_fr0st_query.default.isSame(element, content)) _fr0st_query.default.append(element, content);
-		return element;
-	}
-	/**
-	* Render results.
-	* @param {Array} results The results to render.
-	*/
-	function _renderResults(results) {
-		_fr0st_query.default.show(this._menuNode);
-		for (const value of results) {
-			const element = this._renderItem(value);
-			_fr0st_query.default.append(this._menuNode, element);
-		}
-		if (!_fr0st_query.default.hasChildren(this._menuNode)) {
-			_fr0st_query.default.hide(this._menuNode);
-			return;
-		}
-		if (!_fr0st_query.default.findOne("[data-ui-focus]", this._menuNode) && this._activeItems.length) {
-			const element = this._activeItems[0];
-			_fr0st_query.default.addClass(element, this.constructor.classes.focus);
-			_fr0st_query.default.setDataset(element, { uiFocus: true });
-			const id = _fr0st_query.default.getAttribute(element, "id");
-			_fr0st_query.default.setAttribute(this._node, { "aria-activedescendent": id });
-		}
-	}
+	};
 
 //#endregion
 //#region src/js/index.js
+/**
+	* Normalizes a value for case- and accent-insensitive matching.
+	* @param {string} value The value to normalize.
+	* @returns {string} The normalized value.
+	*/
+	var normalizeValue = (value) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 	Autocomplete.defaults = {
 		lang: {
 			error: "Error loading data.",
 			loading: "Loading.."
 		},
-		data: null,
+		data: [],
 		getResults: null,
 		renderResult: (value) => value,
 		sanitize: (input) => _fr0st_query.default.sanitize(input),
 		isMatch(value, term) {
-			const escapedTerm = _fr0st_query.default._escapeRegExp(term);
-			const regExp = new RegExp(escapedTerm, "i");
-			if (regExp.test(value)) return true;
-			const normalized = value.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-			return regExp.test(normalized);
+			return normalizeValue(value).includes(normalizeValue(term));
 		},
 		sortResults(a, b, term) {
-			const aLower = a.toLowerCase();
-			const bLower = b.toLowerCase();
-			if (term) {
-				const diff = aLower.indexOf(term) - bLower.indexOf(term);
+			const aNormalized = normalizeValue(a);
+			const bNormalized = normalizeValue(b);
+			const termNormalized = normalizeValue(term);
+			if (termNormalized) {
+				const diff = aNormalized.indexOf(termNormalized) - bNormalized.indexOf(termNormalized);
 				if (diff) return diff;
 			}
-			return aLower.localeCompare(bLower);
+			return aNormalized.localeCompare(bNormalized);
 		},
 		minSearch: 1,
 		debounce: 250,
 		duration: 100,
 		maxHeight: "250px",
-		menuSize: null,
 		appendTo: null,
 		fullWidth: false,
 		placement: "bottom",
@@ -497,18 +806,11 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		focus: "focus",
 		info: "autocomplete-item text-body-secondary",
 		item: "autocomplete-item",
-		menu: "autocomplete-menu list-unstyled",
+		menu: "autocomplete-menu list-unstyled fade",
 		menuSmall: "autocomplete-menu-sm",
-		menuLarge: "autocomplete-menu-lg"
+		menuLarge: "autocomplete-menu-lg",
+		show: "show"
 	};
-	var proto = Autocomplete.prototype;
-	proto._events = _events;
-	proto._getDataInit = _getDataInit;
-	proto._getResultsInit = _getResultsInit;
-	proto._render = _render;
-	proto._renderInfo = _renderInfo;
-	proto._renderItem = _renderItem;
-	proto._renderResults = _renderResults;
 	(0, _fr0st_ui.initComponent)("autocomplete", Autocomplete);
 	var js_default = Autocomplete;
 
