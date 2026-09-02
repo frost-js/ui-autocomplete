@@ -59,7 +59,7 @@ export function _render() {
 /**
  * Render an information item.
  * @param {string} text The text to render.
- * @return {HTMLElement} The information item.
+ * @returns {HTMLElement} The information item.
  */
 export function _renderInfo(text) {
     const element = $.create('div', {
@@ -73,7 +73,7 @@ export function _renderInfo(text) {
 /**
  * Render an item.
  * @param {string} value The value to render.
- * @return {HTMLElement} The item element.
+ * @returns {HTMLElement} The item element.
  */
 export function _renderItem(value) {
     const id = generateId('autocomplete-item');
@@ -113,7 +113,7 @@ export function _renderItem(value) {
 
 /**
  * Render results.
- * @param {array} results The results to render.
+ * @param {Array} results The results to render.
  */
 export function _renderResults(results) {
     $.show(this._menuNode);
