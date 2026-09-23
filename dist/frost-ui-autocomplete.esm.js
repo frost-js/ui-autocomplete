@@ -172,7 +172,7 @@ var Autocomplete = class extends BaseComponent {
 		$.setStyle(this.#menuNode, { display: "block" });
 		$.removeClass(this.#menuNode, this.constructor.classes.show);
 		$.setAttribute(this.node, { "aria-expanded": false });
-		this.#setActiveDescendant(null);
+		if (this.node) $.removeAttribute(this.node, "aria-activedescendant");
 		waitForTransition(this.#menuNode, ["opacity"]).then((_) => {
 			if (!this.node || this.#transition !== transition) return;
 			this.#transition = null;
@@ -223,7 +223,7 @@ var Autocomplete = class extends BaseComponent {
 			this.#request.controller.abort();
 			this.#request = null;
 		}
-		this.#setBusy(false);
+		if (this.#menuNode) $.setAttribute(this.#menuNode, { "aria-busy": false });
 	}
 	/**
 	* Creates the menu Popper.
@@ -270,7 +270,7 @@ var Autocomplete = class extends BaseComponent {
 				this.#show("first");
 				return;
 			}
-			if (!this.#load(this.#getTerm(), "first")) this.hide();
+			if (!this.#load(this.node?.value ?? "", "first")) this.hide();
 		});
 		$.addEvent(this.node, "input.ui.autocomplete", this.#inputEvent);
 		$.addEvent(this.node, "keydown.ui.autocomplete", (e) => {
@@ -307,7 +307,7 @@ var Autocomplete = class extends BaseComponent {
 				if (this.#activeItems.length) {
 					const focusNode = e.key === "ArrowUp" ? this.#activeItems.at(-1) : this.#activeItems[0];
 					this.#focusItem(focusNode, { scroll: true });
-				} else if (!this.#request) this.#load(this.#getTerm(), e.key === "ArrowUp" ? "last" : "first");
+				} else if (!this.#request) this.#load(this.node?.value ?? "", e.key === "ArrowUp" ? "last" : "first");
 				return;
 			}
 			const currentIndex = this.#activeItems.indexOf(focusedNode);
@@ -321,7 +321,7 @@ var Autocomplete = class extends BaseComponent {
 				const height = $.height(this.#menuNode);
 				const scrollHeight = $.height(this.#menuNode, { boxSize: $.SCROLL_BOX });
 				if ($.getScrollY(this.#menuNode) < scrollHeight - height - height / 4) return;
-				const term = this.#getTerm();
+				const term = this.node?.value ?? "";
 				if (term !== this.#term) {
 					this.#load(term, "first");
 					return;
@@ -350,7 +350,11 @@ var Autocomplete = class extends BaseComponent {
 		}
 		$.addClass(item, this.constructor.classes.focus);
 		$.setDataset(item, { uiFocus: true });
-		this.#setActiveDescendant($.getAttribute(item, "id"));
+		if (this.node) {
+			const id = $.getAttribute(item, "id");
+			if (id) $.setAttribute(this.node, { "aria-activedescendant": id });
+			else $.removeAttribute(this.node, "aria-activedescendant");
+		}
 		if (!scroll) return;
 		const menuScrollY = $.getScrollY(this.#menuNode);
 		const menuRect = $.rect(this.#menuNode, { offset: true });
@@ -384,14 +388,6 @@ var Autocomplete = class extends BaseComponent {
 				return a.localeCompare(b);
 			}
 		});
-	}
-	/**
-	* Gets the current input term.
-	* @returns {string} The current input term.
-	*/
-	#getTerm() {
-		const value = $.getValue(this.node);
-		return value === null || value === void 0 ? "" : `${value}`;
 	}
 	/**
 	* Checks whether an asynchronous results callback is configured.
@@ -499,7 +495,7 @@ var Autocomplete = class extends BaseComponent {
 	* @returns {HTMLLIElement} The result option.
 	*/
 	#renderItem(value) {
-		const active = this.#getTerm() === value;
+		const active = (this.node?.value ?? "") === value;
 		const item = $.create("li", {
 			class: this.constructor.classes.item,
 			attributes: {
@@ -523,17 +519,6 @@ var Autocomplete = class extends BaseComponent {
 		if (typeof content === "string") $.setHTML(item, this.#sanitize(content));
 		else if (content instanceof this.node.ownerDocument.defaultView.Node && !$.isSame(item, content)) $.append(item, content);
 		return item;
-	}
-	/**
-	* Renders an asynchronous loading error.
-	* @param {AutocompletePendingRequest} request The failed request.
-	*/
-	#renderRequestError(request) {
-		if (!this.#isCurrentRequest(request)) return;
-		this.#showMore = false;
-		$.detach(this.#loaderNode);
-		$.detach(this.#errorNode);
-		$.append(this.#menuNode, this.#errorNode);
 	}
 	/**
 	* Renders a successful asynchronous response.
@@ -578,7 +563,7 @@ var Autocomplete = class extends BaseComponent {
 		else if (focus !== "preserve" && this.#activeItems.length) {
 			const focusNode = focus === "last" ? this.#activeItems.at(-1) : this.#activeItems[0];
 			this.#focusItem(focusNode, { scroll: true });
-		} else this.#setActiveDescendant(null);
+		} else if (this.node) $.removeAttribute(this.node, "aria-activedescendant");
 	}
 	/**
 	* Requests a page of asynchronous results.
@@ -603,7 +588,7 @@ var Autocomplete = class extends BaseComponent {
 			term
 		};
 		this.#request = request;
-		this.#setBusy(true);
+		if (this.#menuNode) $.setAttribute(this.#menuNode, { "aria-busy": true });
 		if (!$.isSame(this.#menuNode.lastElementChild, this.#loaderNode)) $.append(this.#menuNode, this.#loaderNode);
 		this.#loadResults(request);
 	}
@@ -620,10 +605,16 @@ var Autocomplete = class extends BaseComponent {
 			};
 			if (request.term) options.term = request.term;
 			return this.options.getResults.call(this, options);
-		}).then((response) => this.#renderResponse(request, response)).catch((_) => this.#renderRequestError(request)).finally((_) => {
+		}).then((response) => this.#renderResponse(request, response)).catch((_) => {
+			if (!this.#isCurrentRequest(request)) return;
+			this.#showMore = false;
+			$.detach(this.#loaderNode);
+			$.detach(this.#errorNode);
+			$.append(this.#menuNode, this.#errorNode);
+		}).finally((_) => {
 			if (!this.#isCurrentRequest(request)) return;
 			this.#request = null;
-			this.#setBusy(false);
+			if (this.#menuNode) $.setAttribute(this.#menuNode, { "aria-busy": false });
 			this.update();
 			if (this.#showMore && this.#menuNode.scrollHeight <= this.#menuNode.clientHeight) this.#scrollEvent();
 		});
@@ -634,8 +625,8 @@ var Autocomplete = class extends BaseComponent {
 	#resetMenu() {
 		this.#activeItems = [];
 		$.empty(this.#menuNode);
-		this.#setActiveDescendant(null);
-		this.#setBusy(false);
+		if (this.node) $.removeAttribute(this.node, "aria-activedescendant");
+		if (this.#menuNode) $.setAttribute(this.#menuNode, { "aria-busy": false });
 	}
 	/**
 	* Sanitizes a rendered string and falls back to the built-in sanitizer if the callback fails.
@@ -656,7 +647,7 @@ var Autocomplete = class extends BaseComponent {
 	#selectItem(item) {
 		if (!this.node || !item || !this.#activeItems.includes(item)) return;
 		const value = item.dataset.uiValue;
-		if (value !== this.#getTerm()) {
+		if (value !== (this.node?.value ?? "")) {
 			$.setValue(this.node, value);
 			$.triggerEvent(this.node, "change.ui.autocomplete");
 		}
@@ -664,28 +655,12 @@ var Autocomplete = class extends BaseComponent {
 		$.focus(this.node);
 	}
 	/**
-	* Updates the input's active descendant.
-	* @param {string|null} id The focused option ID, or `null` to clear it.
-	*/
-	#setActiveDescendant(id) {
-		if (!this.node) return;
-		if (id) $.setAttribute(this.node, { "aria-activedescendant": id });
-		else $.removeAttribute(this.node, "aria-activedescendant");
-	}
-	/**
-	* Updates the menu's asynchronous busy state.
-	* @param {boolean} busy Whether an asynchronous request is active.
-	*/
-	#setBusy(busy) {
-		if (this.#menuNode) $.setAttribute(this.#menuNode, { "aria-busy": busy });
-	}
-	/**
 	* Shows the Autocomplete menu with the requested initial focus behavior.
 	* @param {AutocompleteFocus} focus The initial focus behavior.
 	*/
 	#show(focus) {
 		if (!this.node || this.node.disabled || this.node.readOnly || $.isConnected(this.#menuNode) && this.#transition?.direction !== "out") return;
-		const term = this.#getTerm();
+		const term = this.node?.value ?? "";
 		if (!this.#meetsMinimumSearch(term)) {
 			this.#cancelRequest();
 			return;

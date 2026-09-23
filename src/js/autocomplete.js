@@ -227,7 +227,9 @@ export default class Autocomplete extends BaseComponent {
         $.setStyle(this.#menuNode, { display: 'block' });
         $.removeClass(this.#menuNode, this.constructor.classes.show);
         $.setAttribute(this.node, { 'aria-expanded': false });
-        this.#setActiveDescendant(null);
+        if (this.node) {
+            $.removeAttribute(this.node, 'aria-activedescendant');
+        }
 
         waitForTransition(this.#menuNode, ['opacity']).then((_) => {
             if (!this.node || this.#transition !== transition) {
@@ -304,7 +306,9 @@ export default class Autocomplete extends BaseComponent {
             this.#request = null;
         }
 
-        this.#setBusy(false);
+        if (this.#menuNode) {
+            $.setAttribute(this.#menuNode, { 'aria-busy': false });
+        }
     }
 
     /**
@@ -396,7 +400,7 @@ export default class Autocomplete extends BaseComponent {
                 return;
             }
 
-            if (!this.#load(this.#getTerm(), 'first')) {
+            if (!this.#load(this.node?.value ?? '', 'first')) {
                 this.hide();
             }
         });
@@ -448,7 +452,7 @@ export default class Autocomplete extends BaseComponent {
                         this.#activeItems[0];
                     this.#focusItem(focusNode, { scroll: true });
                 } else if (!this.#request) {
-                    this.#load(this.#getTerm(), e.key === 'ArrowUp' ? 'last' : 'first');
+                    this.#load(this.node?.value ?? '', e.key === 'ArrowUp' ? 'last' : 'first');
                 }
 
                 return;
@@ -481,7 +485,7 @@ export default class Autocomplete extends BaseComponent {
                     return;
                 }
 
-                const term = this.#getTerm();
+                const term = this.node?.value ?? '';
 
                 if (term !== this.#term) {
                     this.#load(term, 'first');
@@ -519,7 +523,15 @@ export default class Autocomplete extends BaseComponent {
 
         $.addClass(item, this.constructor.classes.focus);
         $.setDataset(item, { uiFocus: true });
-        this.#setActiveDescendant($.getAttribute(item, 'id'));
+        if (this.node) {
+            const id = $.getAttribute(item, 'id');
+
+            if (id) {
+                $.setAttribute(this.node, { 'aria-activedescendant': id });
+            } else {
+                $.removeAttribute(this.node, 'aria-activedescendant');
+            }
+        }
 
         if (!scroll) {
             return;
@@ -565,15 +577,6 @@ export default class Autocomplete extends BaseComponent {
                 return a.localeCompare(b);
             }
         });
-    }
-
-    /**
-     * Gets the current input term.
-     * @returns {string} The current input term.
-     */
-    #getTerm() {
-        const value = $.getValue(this.node);
-        return value === null || value === undefined ? '' : `${value}`;
     }
 
     /**
@@ -709,7 +712,7 @@ export default class Autocomplete extends BaseComponent {
      * @returns {HTMLLIElement} The result option.
      */
     #renderItem(value) {
-        const active = this.#getTerm() === value;
+        const active = (this.node?.value ?? '') === value;
         const item = $.create('li', {
             class: this.constructor.classes.item,
             attributes: {
@@ -743,21 +746,6 @@ export default class Autocomplete extends BaseComponent {
         }
 
         return item;
-    }
-
-    /**
-     * Renders an asynchronous loading error.
-     * @param {AutocompletePendingRequest} request The failed request.
-     */
-    #renderRequestError(request) {
-        if (!this.#isCurrentRequest(request)) {
-            return;
-        }
-
-        this.#showMore = false;
-        $.detach(this.#loaderNode);
-        $.detach(this.#errorNode);
-        $.append(this.#menuNode, this.#errorNode);
     }
 
     /**
@@ -828,8 +816,8 @@ export default class Autocomplete extends BaseComponent {
                 this.#activeItems.at(-1) :
                 this.#activeItems[0];
             this.#focusItem(focusNode, { scroll: true });
-        } else {
-            this.#setActiveDescendant(null);
+        } else if (this.node) {
+            $.removeAttribute(this.node, 'aria-activedescendant');
         }
     }
 
@@ -863,7 +851,9 @@ export default class Autocomplete extends BaseComponent {
         };
 
         this.#request = request;
-        this.#setBusy(true);
+        if (this.#menuNode) {
+            $.setAttribute(this.#menuNode, { 'aria-busy': true });
+        }
 
         if (!$.isSame(this.#menuNode.lastElementChild, this.#loaderNode)) {
             $.append(this.#menuNode, this.#loaderNode);
@@ -895,14 +885,25 @@ export default class Autocomplete extends BaseComponent {
                 return this.options.getResults.call(this, options);
             })
             .then((response) => this.#renderResponse(request, response))
-            .catch((_) => this.#renderRequestError(request))
+            .catch((_) => {
+                if (!this.#isCurrentRequest(request)) {
+                    return;
+                }
+
+                this.#showMore = false;
+                $.detach(this.#loaderNode);
+                $.detach(this.#errorNode);
+                $.append(this.#menuNode, this.#errorNode);
+            })
             .finally((_) => {
                 if (!this.#isCurrentRequest(request)) {
                     return;
                 }
 
                 this.#request = null;
-                this.#setBusy(false);
+                if (this.#menuNode) {
+                    $.setAttribute(this.#menuNode, { 'aria-busy': false });
+                }
                 this.update();
 
                 if (
@@ -920,8 +921,12 @@ export default class Autocomplete extends BaseComponent {
     #resetMenu() {
         this.#activeItems = [];
         $.empty(this.#menuNode);
-        this.#setActiveDescendant(null);
-        this.#setBusy(false);
+        if (this.node) {
+            $.removeAttribute(this.node, 'aria-activedescendant');
+        }
+        if (this.#menuNode) {
+            $.setAttribute(this.#menuNode, { 'aria-busy': false });
+        }
     }
 
     /**
@@ -949,39 +954,13 @@ export default class Autocomplete extends BaseComponent {
         // Read the raw DOM string so values such as "true", "null", and "001" are not JSON-coerced.
         const value = item.dataset.uiValue;
 
-        if (value !== this.#getTerm()) {
+        if (value !== (this.node?.value ?? '')) {
             $.setValue(this.node, value);
             $.triggerEvent(this.node, 'change.ui.autocomplete');
         }
 
         this.hide();
         $.focus(this.node);
-    }
-
-    /**
-     * Updates the input's active descendant.
-     * @param {string|null} id The focused option ID, or `null` to clear it.
-     */
-    #setActiveDescendant(id) {
-        if (!this.node) {
-            return;
-        }
-
-        if (id) {
-            $.setAttribute(this.node, { 'aria-activedescendant': id });
-        } else {
-            $.removeAttribute(this.node, 'aria-activedescendant');
-        }
-    }
-
-    /**
-     * Updates the menu's asynchronous busy state.
-     * @param {boolean} busy Whether an asynchronous request is active.
-     */
-    #setBusy(busy) {
-        if (this.#menuNode) {
-            $.setAttribute(this.#menuNode, { 'aria-busy': busy });
-        }
     }
 
     /**
@@ -1001,7 +980,7 @@ export default class Autocomplete extends BaseComponent {
             return;
         }
 
-        const term = this.#getTerm();
+        const term = this.node?.value ?? '';
 
         if (!this.#meetsMinimumSearch(term)) {
             this.#cancelRequest();

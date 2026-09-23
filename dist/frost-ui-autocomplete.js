@@ -204,7 +204,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 			_fr0st_query.default.setStyle(this.#menuNode, { display: "block" });
 			_fr0st_query.default.removeClass(this.#menuNode, this.constructor.classes.show);
 			_fr0st_query.default.setAttribute(this.node, { "aria-expanded": false });
-			this.#setActiveDescendant(null);
+			if (this.node) _fr0st_query.default.removeAttribute(this.node, "aria-activedescendant");
 			(0, _fr0st_ui.waitForTransition)(this.#menuNode, ["opacity"]).then((_) => {
 				if (!this.node || this.#transition !== transition) return;
 				this.#transition = null;
@@ -255,7 +255,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 				this.#request.controller.abort();
 				this.#request = null;
 			}
-			this.#setBusy(false);
+			if (this.#menuNode) _fr0st_query.default.setAttribute(this.#menuNode, { "aria-busy": false });
 		}
 		/**
 		* Creates the menu Popper.
@@ -302,7 +302,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 					this.#show("first");
 					return;
 				}
-				if (!this.#load(this.#getTerm(), "first")) this.hide();
+				if (!this.#load(this.node?.value ?? "", "first")) this.hide();
 			});
 			_fr0st_query.default.addEvent(this.node, "input.ui.autocomplete", this.#inputEvent);
 			_fr0st_query.default.addEvent(this.node, "keydown.ui.autocomplete", (e) => {
@@ -339,7 +339,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 					if (this.#activeItems.length) {
 						const focusNode = e.key === "ArrowUp" ? this.#activeItems.at(-1) : this.#activeItems[0];
 						this.#focusItem(focusNode, { scroll: true });
-					} else if (!this.#request) this.#load(this.#getTerm(), e.key === "ArrowUp" ? "last" : "first");
+					} else if (!this.#request) this.#load(this.node?.value ?? "", e.key === "ArrowUp" ? "last" : "first");
 					return;
 				}
 				const currentIndex = this.#activeItems.indexOf(focusedNode);
@@ -353,7 +353,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 					const height = _fr0st_query.default.height(this.#menuNode);
 					const scrollHeight = _fr0st_query.default.height(this.#menuNode, { boxSize: _fr0st_query.default.SCROLL_BOX });
 					if (_fr0st_query.default.getScrollY(this.#menuNode) < scrollHeight - height - height / 4) return;
-					const term = this.#getTerm();
+					const term = this.node?.value ?? "";
 					if (term !== this.#term) {
 						this.#load(term, "first");
 						return;
@@ -382,7 +382,11 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 			}
 			_fr0st_query.default.addClass(item, this.constructor.classes.focus);
 			_fr0st_query.default.setDataset(item, { uiFocus: true });
-			this.#setActiveDescendant(_fr0st_query.default.getAttribute(item, "id"));
+			if (this.node) {
+				const id = _fr0st_query.default.getAttribute(item, "id");
+				if (id) _fr0st_query.default.setAttribute(this.node, { "aria-activedescendant": id });
+				else _fr0st_query.default.removeAttribute(this.node, "aria-activedescendant");
+			}
 			if (!scroll) return;
 			const menuScrollY = _fr0st_query.default.getScrollY(this.#menuNode);
 			const menuRect = _fr0st_query.default.rect(this.#menuNode, { offset: true });
@@ -416,14 +420,6 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 					return a.localeCompare(b);
 				}
 			});
-		}
-		/**
-		* Gets the current input term.
-		* @returns {string} The current input term.
-		*/
-		#getTerm() {
-			const value = _fr0st_query.default.getValue(this.node);
-			return value === null || value === void 0 ? "" : `${value}`;
 		}
 		/**
 		* Checks whether an asynchronous results callback is configured.
@@ -531,7 +527,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		* @returns {HTMLLIElement} The result option.
 		*/
 		#renderItem(value) {
-			const active = this.#getTerm() === value;
+			const active = (this.node?.value ?? "") === value;
 			const item = _fr0st_query.default.create("li", {
 				class: this.constructor.classes.item,
 				attributes: {
@@ -555,17 +551,6 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 			if (typeof content === "string") _fr0st_query.default.setHTML(item, this.#sanitize(content));
 			else if (content instanceof this.node.ownerDocument.defaultView.Node && !_fr0st_query.default.isSame(item, content)) _fr0st_query.default.append(item, content);
 			return item;
-		}
-		/**
-		* Renders an asynchronous loading error.
-		* @param {AutocompletePendingRequest} request The failed request.
-		*/
-		#renderRequestError(request) {
-			if (!this.#isCurrentRequest(request)) return;
-			this.#showMore = false;
-			_fr0st_query.default.detach(this.#loaderNode);
-			_fr0st_query.default.detach(this.#errorNode);
-			_fr0st_query.default.append(this.#menuNode, this.#errorNode);
 		}
 		/**
 		* Renders a successful asynchronous response.
@@ -610,7 +595,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 			else if (focus !== "preserve" && this.#activeItems.length) {
 				const focusNode = focus === "last" ? this.#activeItems.at(-1) : this.#activeItems[0];
 				this.#focusItem(focusNode, { scroll: true });
-			} else this.#setActiveDescendant(null);
+			} else if (this.node) _fr0st_query.default.removeAttribute(this.node, "aria-activedescendant");
 		}
 		/**
 		* Requests a page of asynchronous results.
@@ -635,7 +620,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 				term
 			};
 			this.#request = request;
-			this.#setBusy(true);
+			if (this.#menuNode) _fr0st_query.default.setAttribute(this.#menuNode, { "aria-busy": true });
 			if (!_fr0st_query.default.isSame(this.#menuNode.lastElementChild, this.#loaderNode)) _fr0st_query.default.append(this.#menuNode, this.#loaderNode);
 			this.#loadResults(request);
 		}
@@ -652,10 +637,16 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 				};
 				if (request.term) options.term = request.term;
 				return this.options.getResults.call(this, options);
-			}).then((response) => this.#renderResponse(request, response)).catch((_) => this.#renderRequestError(request)).finally((_) => {
+			}).then((response) => this.#renderResponse(request, response)).catch((_) => {
+				if (!this.#isCurrentRequest(request)) return;
+				this.#showMore = false;
+				_fr0st_query.default.detach(this.#loaderNode);
+				_fr0st_query.default.detach(this.#errorNode);
+				_fr0st_query.default.append(this.#menuNode, this.#errorNode);
+			}).finally((_) => {
 				if (!this.#isCurrentRequest(request)) return;
 				this.#request = null;
-				this.#setBusy(false);
+				if (this.#menuNode) _fr0st_query.default.setAttribute(this.#menuNode, { "aria-busy": false });
 				this.update();
 				if (this.#showMore && this.#menuNode.scrollHeight <= this.#menuNode.clientHeight) this.#scrollEvent();
 			});
@@ -666,8 +657,8 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		#resetMenu() {
 			this.#activeItems = [];
 			_fr0st_query.default.empty(this.#menuNode);
-			this.#setActiveDescendant(null);
-			this.#setBusy(false);
+			if (this.node) _fr0st_query.default.removeAttribute(this.node, "aria-activedescendant");
+			if (this.#menuNode) _fr0st_query.default.setAttribute(this.#menuNode, { "aria-busy": false });
 		}
 		/**
 		* Sanitizes a rendered string and falls back to the built-in sanitizer if the callback fails.
@@ -688,7 +679,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		#selectItem(item) {
 			if (!this.node || !item || !this.#activeItems.includes(item)) return;
 			const value = item.dataset.uiValue;
-			if (value !== this.#getTerm()) {
+			if (value !== (this.node?.value ?? "")) {
 				_fr0st_query.default.setValue(this.node, value);
 				_fr0st_query.default.triggerEvent(this.node, "change.ui.autocomplete");
 			}
@@ -696,28 +687,12 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 			_fr0st_query.default.focus(this.node);
 		}
 		/**
-		* Updates the input's active descendant.
-		* @param {string|null} id The focused option ID, or `null` to clear it.
-		*/
-		#setActiveDescendant(id) {
-			if (!this.node) return;
-			if (id) _fr0st_query.default.setAttribute(this.node, { "aria-activedescendant": id });
-			else _fr0st_query.default.removeAttribute(this.node, "aria-activedescendant");
-		}
-		/**
-		* Updates the menu's asynchronous busy state.
-		* @param {boolean} busy Whether an asynchronous request is active.
-		*/
-		#setBusy(busy) {
-			if (this.#menuNode) _fr0st_query.default.setAttribute(this.#menuNode, { "aria-busy": busy });
-		}
-		/**
 		* Shows the Autocomplete menu with the requested initial focus behavior.
 		* @param {AutocompleteFocus} focus The initial focus behavior.
 		*/
 		#show(focus) {
 			if (!this.node || this.node.disabled || this.node.readOnly || _fr0st_query.default.isConnected(this.#menuNode) && this.#transition?.direction !== "out") return;
-			const term = this.#getTerm();
+			const term = this.node?.value ?? "";
 			if (!this.#meetsMinimumSearch(term)) {
 				this.#cancelRequest();
 				return;
