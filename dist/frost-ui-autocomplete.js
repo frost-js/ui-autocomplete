@@ -1,8 +1,8 @@
 (function(global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ?  factory(exports, require('@fr0st/query'), require('@fr0st/ui')) :
-  typeof define === 'function' && define.amd ? define(['exports', '@fr0st/query', '@fr0st/ui'], factory) :
-  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory((global.UI = global.UI || {}), global.fQuery,global.UI));
-})(this, function(exports, _fr0st_query, _fr0st_ui) {
+  typeof exports === 'object' && typeof module !== 'undefined' ?  factory(exports, require('@fr0st/ui'), require('@fr0st/query')) :
+  typeof define === 'function' && define.amd ? define(['exports', '@fr0st/ui', '@fr0st/query'], factory) :
+  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory((global.UI = global.UI || {}), global.UI,global.fQuery));
+})(this, function(exports, _fr0st_ui, _fr0st_query) {
 Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
 //#region \0rolldown/runtime.js
 	var __create = Object.create;
@@ -33,6 +33,17 @@ Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
 //#endregion
 _fr0st_query = __toESM(_fr0st_query, 1);
 
+//#region src/js/helpers.js
+/**
+	* Normalizes a value for case- and accent-insensitive matching.
+	* @param {string} value The value to normalize.
+	* @returns {string} The normalized value.
+	*/
+	function normalizeValue(value) {
+		return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+	}
+
+//#endregion
 //#region src/js/autocomplete.js
 /** @import { NodeInput } from '@fr0st/query/src/helpers.js'; */
 	/** @import { Placement, Position } from '@fr0st/ui/src/js/popper/popper.js'; */
@@ -125,6 +136,51 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 	* @augments {BaseComponent<AutocompleteOptions>}
 	*/
 	var Autocomplete = class extends _fr0st_ui.BaseComponent {
+		static classes = {
+			active: "active",
+			focus: "focus",
+			info: "autocomplete-item text-body-secondary",
+			item: "autocomplete-item",
+			menu: "autocomplete-menu list-unstyled fade",
+			menuSmall: "autocomplete-menu-sm",
+			menuLarge: "autocomplete-menu-lg",
+			show: "show"
+		};
+		/** @type {AutocompleteOptions} */
+		static defaults = {
+			lang: {
+				error: "Error loading data.",
+				loading: "Loading.."
+			},
+			data: [],
+			getResults: null,
+			renderResult: (value) => value,
+			sanitize: (input) => _fr0st_query.default.sanitize(input),
+			isMatch(value, term) {
+				return normalizeValue(value).includes(normalizeValue(term));
+			},
+			sortResults(a, b, term) {
+				const aNormalized = normalizeValue(a);
+				const bNormalized = normalizeValue(b);
+				const termNormalized = normalizeValue(term);
+				if (termNormalized) {
+					const diff = aNormalized.indexOf(termNormalized) - bNormalized.indexOf(termNormalized);
+					if (diff) return diff;
+				}
+				return aNormalized.localeCompare(bNormalized);
+			},
+			minSearch: 1,
+			debounce: 250,
+			duration: 100,
+			maxHeight: "250px",
+			appendTo: null,
+			fullWidth: false,
+			placement: "bottom",
+			position: "start",
+			fixed: false,
+			spacing: 0,
+			minContact: false
+		};
 		/** @type {HTMLLIElement[]} */
 		#activeItems = [];
 		/** @type {string[]} */
@@ -197,7 +253,8 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		hide() {
 			this.#inputEvent?.cancel();
 			this.#scrollEvent?.cancel();
-			if (!this.node || !_fr0st_query.default.isConnected(this.#menuNode) || this.#transition?.direction === "out" || !_fr0st_query.default.triggerOne(this.node, "hide.ui.autocomplete") || !this.node) return;
+			if (!this.node || !_fr0st_query.default.isConnected(this.#menuNode) || this.#transition?.direction === "out") return;
+			if (!_fr0st_query.default.triggerOne(this.node, "hide.ui.autocomplete") || !this.node) return;
 			this.#cancelRequest();
 			const transition = { direction: "out" };
 			this.#transition = transition;
@@ -733,56 +790,6 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 
 //#endregion
 //#region src/js/index.js
-/**
-	* Normalizes a value for case- and accent-insensitive matching.
-	* @param {string} value The value to normalize.
-	* @returns {string} The normalized value.
-	*/
-	var normalizeValue = (value) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-	Autocomplete.defaults = {
-		lang: {
-			error: "Error loading data.",
-			loading: "Loading.."
-		},
-		data: [],
-		getResults: null,
-		renderResult: (value) => value,
-		sanitize: (input) => _fr0st_query.default.sanitize(input),
-		isMatch(value, term) {
-			return normalizeValue(value).includes(normalizeValue(term));
-		},
-		sortResults(a, b, term) {
-			const aNormalized = normalizeValue(a);
-			const bNormalized = normalizeValue(b);
-			const termNormalized = normalizeValue(term);
-			if (termNormalized) {
-				const diff = aNormalized.indexOf(termNormalized) - bNormalized.indexOf(termNormalized);
-				if (diff) return diff;
-			}
-			return aNormalized.localeCompare(bNormalized);
-		},
-		minSearch: 1,
-		debounce: 250,
-		duration: 100,
-		maxHeight: "250px",
-		appendTo: null,
-		fullWidth: false,
-		placement: "bottom",
-		position: "start",
-		fixed: false,
-		spacing: 0,
-		minContact: false
-	};
-	Autocomplete.classes = {
-		active: "active",
-		focus: "focus",
-		info: "autocomplete-item text-body-secondary",
-		item: "autocomplete-item",
-		menu: "autocomplete-menu list-unstyled fade",
-		menuSmall: "autocomplete-menu-sm",
-		menuLarge: "autocomplete-menu-lg",
-		show: "show"
-	};
 	(0, _fr0st_ui.initComponent)("autocomplete", Autocomplete);
 	var js_default = Autocomplete;
 
