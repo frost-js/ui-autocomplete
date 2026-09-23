@@ -214,8 +214,6 @@ export default class Autocomplete extends BaseComponent {
             return;
         }
 
-        const node = this.node;
-
         this.#transition = null;
         this.#cancelRequest();
         this.#inputEvent?.cancel();
@@ -227,7 +225,7 @@ export default class Autocomplete extends BaseComponent {
         }
 
         $.removeEvent(
-            node,
+            this.node,
             'blur.ui.autocomplete input.ui.autocomplete keydown.ui.autocomplete',
         );
         $.removeEvent(
@@ -238,9 +236,9 @@ export default class Autocomplete extends BaseComponent {
 
         for (const [attribute, value] of this.#inputAttributes) {
             if (value === null) {
-                $.removeAttribute(node, attribute);
+                $.removeAttribute(this.node, attribute);
             } else {
-                $.setAttribute(node, attribute, value);
+                $.setAttribute(this.node, attribute, value);
             }
         }
 
@@ -464,7 +462,7 @@ export default class Autocomplete extends BaseComponent {
                 return;
             }
 
-            if (!this.#load(this.node?.value ?? '', 'first')) {
+            if (!this.#load(this.node.value, 'first')) {
                 this.hide();
             }
         });
@@ -555,7 +553,7 @@ export default class Autocomplete extends BaseComponent {
                     return;
                 }
 
-                const term = this.node?.value ?? '';
+                const term = this.node.value;
 
                 if (term !== this.#term) {
                     this.#load(term, 'first');
@@ -1062,7 +1060,7 @@ export default class Autocomplete extends BaseComponent {
         // Read the raw DOM string so values such as "true", "null", and "001" are not JSON-coerced.
         const value = item.dataset.uiValue;
 
-        if (value !== (this.node?.value ?? '')) {
+        if (value !== this.node.value) {
             $.setValue(this.node, value);
             $.triggerEvent(this.node, 'change.ui.autocomplete');
         }
@@ -1088,7 +1086,7 @@ export default class Autocomplete extends BaseComponent {
             return;
         }
 
-        const term = this.node?.value ?? '';
+        const term = this.node.value;
 
         if (!this.#meetsMinimumSearch(term)) {
             this.#cancelRequest();

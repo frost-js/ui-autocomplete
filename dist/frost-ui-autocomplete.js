@@ -223,7 +223,6 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		/** @inheritdoc */
 		dispose() {
 			if (!this.node) return;
-			const node = this.node;
 			this.#transition = null;
 			this.#cancelRequest();
 			this.#inputEvent?.cancel();
@@ -232,11 +231,11 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 				this.#popper.dispose();
 				this.#popper = null;
 			}
-			_fr0st_query.default.removeEvent(node, "blur.ui.autocomplete input.ui.autocomplete keydown.ui.autocomplete");
+			_fr0st_query.default.removeEvent(this.node, "blur.ui.autocomplete input.ui.autocomplete keydown.ui.autocomplete");
 			_fr0st_query.default.removeEvent(this.#menuNode, "mousedown.ui.autocomplete click.ui.autocomplete mouseover.ui.autocomplete scroll.ui.autocomplete");
 			_fr0st_query.default.remove(this.#menuNode);
-			for (const [attribute, value] of this.#inputAttributes) if (value === null) _fr0st_query.default.removeAttribute(node, attribute);
-			else _fr0st_query.default.setAttribute(node, attribute, value);
+			for (const [attribute, value] of this.#inputAttributes) if (value === null) _fr0st_query.default.removeAttribute(this.node, attribute);
+			else _fr0st_query.default.setAttribute(this.node, attribute, value);
 			this.#activeItems = null;
 			this.#data = null;
 			this.#errorNode = null;
@@ -360,7 +359,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 					this.#show("first");
 					return;
 				}
-				if (!this.#load(this.node?.value ?? "", "first")) this.hide();
+				if (!this.#load(this.node.value, "first")) this.hide();
 			});
 			_fr0st_query.default.addEvent(this.node, "input.ui.autocomplete", this.#inputEvent);
 			_fr0st_query.default.addEvent(this.node, "keydown.ui.autocomplete", (e) => {
@@ -411,7 +410,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 					const height = _fr0st_query.default.height(this.#menuNode);
 					const scrollHeight = _fr0st_query.default.height(this.#menuNode, { boxSize: _fr0st_query.default.SCROLL_BOX });
 					if (_fr0st_query.default.getScrollY(this.#menuNode) < scrollHeight - height - height / 4) return;
-					const term = this.node?.value ?? "";
+					const term = this.node.value;
 					if (term !== this.#term) {
 						this.#load(term, "first");
 						return;
@@ -743,7 +742,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		#selectItem(item) {
 			if (!this.node || !item || !this.#activeItems.includes(item)) return;
 			const value = item.dataset.uiValue;
-			if (value !== (this.node?.value ?? "")) {
+			if (value !== this.node.value) {
 				_fr0st_query.default.setValue(this.node, value);
 				_fr0st_query.default.triggerEvent(this.node, "change.ui.autocomplete");
 			}
@@ -756,7 +755,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		*/
 		#show(focus) {
 			if (!this.node || this.node.disabled || this.node.readOnly || _fr0st_query.default.isConnected(this.#menuNode) && this.#transition?.direction !== "out") return;
-			const term = this.node?.value ?? "";
+			const term = this.node.value;
 			if (!this.#meetsMinimumSearch(term)) {
 				this.#cancelRequest();
 				return;

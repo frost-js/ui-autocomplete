@@ -191,7 +191,6 @@ var Autocomplete = class extends BaseComponent {
 	/** @inheritdoc */
 	dispose() {
 		if (!this.node) return;
-		const node = this.node;
 		this.#transition = null;
 		this.#cancelRequest();
 		this.#inputEvent?.cancel();
@@ -200,11 +199,11 @@ var Autocomplete = class extends BaseComponent {
 			this.#popper.dispose();
 			this.#popper = null;
 		}
-		$.removeEvent(node, "blur.ui.autocomplete input.ui.autocomplete keydown.ui.autocomplete");
+		$.removeEvent(this.node, "blur.ui.autocomplete input.ui.autocomplete keydown.ui.autocomplete");
 		$.removeEvent(this.#menuNode, "mousedown.ui.autocomplete click.ui.autocomplete mouseover.ui.autocomplete scroll.ui.autocomplete");
 		$.remove(this.#menuNode);
-		for (const [attribute, value] of this.#inputAttributes) if (value === null) $.removeAttribute(node, attribute);
-		else $.setAttribute(node, attribute, value);
+		for (const [attribute, value] of this.#inputAttributes) if (value === null) $.removeAttribute(this.node, attribute);
+		else $.setAttribute(this.node, attribute, value);
 		this.#activeItems = null;
 		this.#data = null;
 		this.#errorNode = null;
@@ -328,7 +327,7 @@ var Autocomplete = class extends BaseComponent {
 				this.#show("first");
 				return;
 			}
-			if (!this.#load(this.node?.value ?? "", "first")) this.hide();
+			if (!this.#load(this.node.value, "first")) this.hide();
 		});
 		$.addEvent(this.node, "input.ui.autocomplete", this.#inputEvent);
 		$.addEvent(this.node, "keydown.ui.autocomplete", (e) => {
@@ -379,7 +378,7 @@ var Autocomplete = class extends BaseComponent {
 				const height = $.height(this.#menuNode);
 				const scrollHeight = $.height(this.#menuNode, { boxSize: $.SCROLL_BOX });
 				if ($.getScrollY(this.#menuNode) < scrollHeight - height - height / 4) return;
-				const term = this.node?.value ?? "";
+				const term = this.node.value;
 				if (term !== this.#term) {
 					this.#load(term, "first");
 					return;
@@ -711,7 +710,7 @@ var Autocomplete = class extends BaseComponent {
 	#selectItem(item) {
 		if (!this.node || !item || !this.#activeItems.includes(item)) return;
 		const value = item.dataset.uiValue;
-		if (value !== (this.node?.value ?? "")) {
+		if (value !== this.node.value) {
 			$.setValue(this.node, value);
 			$.triggerEvent(this.node, "change.ui.autocomplete");
 		}
@@ -724,7 +723,7 @@ var Autocomplete = class extends BaseComponent {
 	*/
 	#show(focus) {
 		if (!this.node || this.node.disabled || this.node.readOnly || $.isConnected(this.#menuNode) && this.#transition?.direction !== "out") return;
-		const term = this.node?.value ?? "";
+		const term = this.node.value;
 		if (!this.#meetsMinimumSearch(term)) {
 			this.#cancelRequest();
 			return;
