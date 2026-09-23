@@ -207,6 +207,9 @@ export default class Autocomplete extends BaseComponent {
      * Hides the Autocomplete menu.
      */
     hide() {
+        this.#inputEvent?.cancel();
+        this.#scrollEvent?.cancel();
+
         if (
             !this.node ||
             !$.isConnected(this.#menuNode) ||

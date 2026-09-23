@@ -164,6 +164,8 @@ var Autocomplete = class extends BaseComponent {
 	* Hides the Autocomplete menu.
 	*/
 	hide() {
+		this.#inputEvent?.cancel();
+		this.#scrollEvent?.cancel();
 		if (!this.node || !$.isConnected(this.#menuNode) || this.#transition?.direction === "out" || !$.triggerOne(this.node, "hide.ui.autocomplete")) return;
 		this.#cancelRequest();
 		const transition = { direction: "out" };

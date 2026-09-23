@@ -196,6 +196,8 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		* Hides the Autocomplete menu.
 		*/
 		hide() {
+			this.#inputEvent?.cancel();
+			this.#scrollEvent?.cancel();
 			if (!this.node || !_fr0st_query.default.isConnected(this.#menuNode) || this.#transition?.direction === "out" || !_fr0st_query.default.triggerOne(this.node, "hide.ui.autocomplete")) return;
 			this.#cancelRequest();
 			const transition = { direction: "out" };
