@@ -579,7 +579,7 @@ var Autocomplete = class extends BaseComponent {
 		if (focusedNode) this.#focusItem(focusedNode);
 		else if (focus !== "preserve" && this.#activeItems.length) {
 			const focusNode = focus === "last" ? this.#activeItems.at(-1) : this.#activeItems[0];
-			this.#focusItem(focusNode);
+			this.#focusItem(focusNode, { scroll: true });
 		} else this.#setActiveDescendant(null);
 	}
 	/**
@@ -720,6 +720,7 @@ var Autocomplete = class extends BaseComponent {
 		$.addClass(this.#menuNode, this.constructor.classes.show);
 		$.setStyle(this.#menuNode, { display: "" });
 		$.setAttribute(this.node, { "aria-expanded": true });
+		this.#focusItem(this.#getFocusedItem(), { scroll: true });
 		this.node.ownerDocument.defaultView.requestAnimationFrame((_) => {
 			if (this.node && this.#transition === transition) this.update();
 		});

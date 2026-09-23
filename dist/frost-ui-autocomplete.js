@@ -611,7 +611,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 			if (focusedNode) this.#focusItem(focusedNode);
 			else if (focus !== "preserve" && this.#activeItems.length) {
 				const focusNode = focus === "last" ? this.#activeItems.at(-1) : this.#activeItems[0];
-				this.#focusItem(focusNode);
+				this.#focusItem(focusNode, { scroll: true });
 			} else this.#setActiveDescendant(null);
 		}
 		/**
@@ -752,6 +752,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 			_fr0st_query.default.addClass(this.#menuNode, this.constructor.classes.show);
 			_fr0st_query.default.setStyle(this.#menuNode, { display: "" });
 			_fr0st_query.default.setAttribute(this.node, { "aria-expanded": true });
+			this.#focusItem(this.#getFocusedItem(), { scroll: true });
 			this.node.ownerDocument.defaultView.requestAnimationFrame((_) => {
 				if (this.node && this.#transition === transition) this.update();
 			});
