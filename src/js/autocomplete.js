@@ -857,18 +857,17 @@ export default class Autocomplete extends BaseComponent {
 
         if (request.offset) {
             this.#data.push(...results);
-
-            if (results.length) {
-                this.#renderResults(results, { append: true, focus: request.focus });
-            }
         } else {
             this.#data = [...results];
+        }
 
-            if (results.length) {
-                this.#renderResults(results, { focus: request.focus });
-            } else {
-                this.hide();
-            }
+        if (results.length) {
+            this.#renderResults(results, {
+                append: Boolean(request.offset),
+                focus: request.focus,
+            });
+        } else if (!request.offset) {
+            this.hide();
         }
     }
 

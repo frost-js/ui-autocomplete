@@ -589,17 +589,13 @@ var Autocomplete = class extends BaseComponent {
 		const results = response.results;
 		this.#showMore = Boolean(response.showMore) && results.length > 0;
 		$.detach(this.#loaderNode);
-		if (request.offset) {
-			this.#data.push(...results);
-			if (results.length) this.#renderResults(results, {
-				append: true,
-				focus: request.focus
-			});
-		} else {
-			this.#data = [...results];
-			if (results.length) this.#renderResults(results, { focus: request.focus });
-			else this.hide();
-		}
+		if (request.offset) this.#data.push(...results);
+		else this.#data = [...results];
+		if (results.length) this.#renderResults(results, {
+			append: Boolean(request.offset),
+			focus: request.focus
+		});
+		else if (!request.offset) this.hide();
 	}
 	/**
 	* Renders a page of results.
