@@ -116,7 +116,6 @@ export default class Autocomplete extends BaseComponent {
     #inputEvent = null;
     /** @type {HTMLLIElement|null} */
     #loaderNode = null;
-    #loadingScroll = false;
     #loadResults = null;
     /** @type {HTMLUListElement|null} */
     #menuNode = null;
@@ -305,7 +304,6 @@ export default class Autocomplete extends BaseComponent {
             this.#request = null;
         }
 
-        this.#loadingScroll = false;
         this.#setBusy(false);
     }
 
@@ -469,7 +467,6 @@ export default class Autocomplete extends BaseComponent {
             this.#scrollEvent = $._throttle((_) => {
                 if (
                     !this.node ||
-                    this.#loadingScroll ||
                     this.#request ||
                     !this.#showMore
                 ) {
@@ -866,7 +863,6 @@ export default class Autocomplete extends BaseComponent {
         };
 
         this.#request = request;
-        this.#loadingScroll = offset > 0;
         this.#setBusy(true);
 
         if (!$.isSame(this.#menuNode.lastElementChild, this.#loaderNode)) {
@@ -898,23 +894,14 @@ export default class Autocomplete extends BaseComponent {
 
                 return this.options.getResults.call(this, options);
             })
-            .then((response) => {
-                if (this.#isCurrentRequest(request)) {
-                    this.#renderResponse(request, response);
-                }
-            })
-            .catch((_) => {
-                if (!request.controller.signal.aborted) {
-                    this.#renderRequestError(request);
-                }
-            })
+            .then((response) => this.#renderResponse(request, response))
+            .catch((_) => this.#renderRequestError(request))
             .finally((_) => {
                 if (!this.#isCurrentRequest(request)) {
                     return;
                 }
 
                 this.#request = null;
-                this.#loadingScroll = false;
                 this.#setBusy(false);
                 this.update();
 

@@ -104,7 +104,6 @@ var Autocomplete = class extends BaseComponent {
 	#inputEvent = null;
 	/** @type {HTMLLIElement|null} */
 	#loaderNode = null;
-	#loadingScroll = false;
 	#loadResults = null;
 	/** @type {HTMLUListElement|null} */
 	#menuNode = null;
@@ -224,7 +223,6 @@ var Autocomplete = class extends BaseComponent {
 			this.#request.controller.abort();
 			this.#request = null;
 		}
-		this.#loadingScroll = false;
 		this.#setBusy(false);
 	}
 	/**
@@ -319,7 +317,7 @@ var Autocomplete = class extends BaseComponent {
 		});
 		if (this.#hasRemoteResults()) {
 			this.#scrollEvent = $._throttle((_) => {
-				if (!this.node || this.#loadingScroll || this.#request || !this.#showMore) return;
+				if (!this.node || this.#request || !this.#showMore) return;
 				const height = $.height(this.#menuNode);
 				const scrollHeight = $.height(this.#menuNode, { boxSize: $.SCROLL_BOX });
 				if ($.getScrollY(this.#menuNode) < scrollHeight - height - height / 4) return;
@@ -605,7 +603,6 @@ var Autocomplete = class extends BaseComponent {
 			term
 		};
 		this.#request = request;
-		this.#loadingScroll = offset > 0;
 		this.#setBusy(true);
 		if (!$.isSame(this.#menuNode.lastElementChild, this.#loaderNode)) $.append(this.#menuNode, this.#loaderNode);
 		this.#loadResults(request);
@@ -623,14 +620,9 @@ var Autocomplete = class extends BaseComponent {
 			};
 			if (request.term) options.term = request.term;
 			return this.options.getResults.call(this, options);
-		}).then((response) => {
-			if (this.#isCurrentRequest(request)) this.#renderResponse(request, response);
-		}).catch((_) => {
-			if (!request.controller.signal.aborted) this.#renderRequestError(request);
-		}).finally((_) => {
+		}).then((response) => this.#renderResponse(request, response)).catch((_) => this.#renderRequestError(request)).finally((_) => {
 			if (!this.#isCurrentRequest(request)) return;
 			this.#request = null;
-			this.#loadingScroll = false;
 			this.#setBusy(false);
 			this.update();
 			if (this.#showMore && this.#menuNode.scrollHeight <= this.#menuNode.clientHeight) this.#scrollEvent();

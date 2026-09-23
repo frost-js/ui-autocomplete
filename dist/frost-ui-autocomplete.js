@@ -136,7 +136,6 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		#inputEvent = null;
 		/** @type {HTMLLIElement|null} */
 		#loaderNode = null;
-		#loadingScroll = false;
 		#loadResults = null;
 		/** @type {HTMLUListElement|null} */
 		#menuNode = null;
@@ -256,7 +255,6 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 				this.#request.controller.abort();
 				this.#request = null;
 			}
-			this.#loadingScroll = false;
 			this.#setBusy(false);
 		}
 		/**
@@ -351,7 +349,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 			});
 			if (this.#hasRemoteResults()) {
 				this.#scrollEvent = _fr0st_query.default._throttle((_) => {
-					if (!this.node || this.#loadingScroll || this.#request || !this.#showMore) return;
+					if (!this.node || this.#request || !this.#showMore) return;
 					const height = _fr0st_query.default.height(this.#menuNode);
 					const scrollHeight = _fr0st_query.default.height(this.#menuNode, { boxSize: _fr0st_query.default.SCROLL_BOX });
 					if (_fr0st_query.default.getScrollY(this.#menuNode) < scrollHeight - height - height / 4) return;
@@ -637,7 +635,6 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 				term
 			};
 			this.#request = request;
-			this.#loadingScroll = offset > 0;
 			this.#setBusy(true);
 			if (!_fr0st_query.default.isSame(this.#menuNode.lastElementChild, this.#loaderNode)) _fr0st_query.default.append(this.#menuNode, this.#loaderNode);
 			this.#loadResults(request);
@@ -655,14 +652,9 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 				};
 				if (request.term) options.term = request.term;
 				return this.options.getResults.call(this, options);
-			}).then((response) => {
-				if (this.#isCurrentRequest(request)) this.#renderResponse(request, response);
-			}).catch((_) => {
-				if (!request.controller.signal.aborted) this.#renderRequestError(request);
-			}).finally((_) => {
+			}).then((response) => this.#renderResponse(request, response)).catch((_) => this.#renderRequestError(request)).finally((_) => {
 				if (!this.#isCurrentRequest(request)) return;
 				this.#request = null;
-				this.#loadingScroll = false;
 				this.#setBusy(false);
 				this.update();
 				if (this.#showMore && this.#menuNode.scrollHeight <= this.#menuNode.clientHeight) this.#scrollEvent();
