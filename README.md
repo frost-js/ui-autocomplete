@@ -17,7 +17,7 @@ An accessible autocomplete component for [Frost UI](https://github.com/frost-js/
 - Safe-by-default string rendering plus an explicit trusted-DOM rendering path.
 - Popper-powered placement, configurable sizing, RTL support, and responsive overflow.
 - ESM and UMD distributions, with source maps and expanded/minified CSS.
-- Native JavaScript and [fQuery](https://github.com/frost-js/query) APIs.
+- Native JavaScript and [fQuery](https://github.com/frost-js/fquery) APIs.
 
 ## Installation
 
@@ -46,15 +46,15 @@ Autocomplete.init(document.querySelector('#city'), {
 The ESM build keeps `@fr0st/query` and `@fr0st/ui` external. Use an import map, or map those specifiers with your preferred CDN.
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fr0st/ui@3/dist/frost-ui.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fr0st/ui@4/dist/frost-ui.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fr0st/ui-autocomplete@4/dist/frost-ui-autocomplete.min.css">
 
 <script type="importmap">
 {
     "imports": {
-        "@fr0st/core": "https://cdn.jsdelivr.net/npm/@fr0st/core@latest/dist/frost-core.esm.min.js",
-        "@fr0st/query": "https://cdn.jsdelivr.net/npm/@fr0st/query@4/dist/fquery.esm.min.js",
-        "@fr0st/ui": "https://cdn.jsdelivr.net/npm/@fr0st/ui@3/dist/frost-ui.esm.min.js"
+        "@fr0st/core": "https://cdn.jsdelivr.net/npm/@fr0st/core@4/dist/frost-core.esm.min.js",
+        "@fr0st/query": "https://cdn.jsdelivr.net/npm/@fr0st/query@5/dist/fquery.esm.min.js",
+        "@fr0st/ui": "https://cdn.jsdelivr.net/npm/@fr0st/ui@4/dist/frost-ui.esm.min.js"
     }
 }
 </script>
@@ -72,10 +72,10 @@ The ESM build keeps `@fr0st/query` and `@fr0st/ui` external. Use an import map, 
 Load Frost UI's all-in-one bundle before Autocomplete. It supplies the `UI` and `fQuery` globals expected by the component, and the Autocomplete UMD build extends the existing `globalThis.UI` object.
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fr0st/ui@3/dist/frost-ui.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fr0st/ui@4/dist/frost-ui.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fr0st/ui-autocomplete@4/dist/frost-ui-autocomplete.min.css">
 
-<script src="https://cdn.jsdelivr.net/npm/@fr0st/ui@3/dist/frost-ui-bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fr0st/ui@4/dist/frost-ui-bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@fr0st/ui-autocomplete@4/dist/frost-ui-autocomplete.min.js"></script>
 <script>
     UI.Autocomplete.init(document.querySelector('#city'), {
@@ -371,9 +371,9 @@ The stylesheet consumes Frost UI color tokens, so it follows Frost UI's light, d
 
 Version 4 is a major package, build, and component internals update.
 
-- Upgrade peers to `@fr0st/query ^4.1.2` and `@fr0st/ui ^3.0.0`.
+- Upgrade peers to `@fr0st/query ^5.0.0` and `@fr0st/ui ^4.0.0`.
 - The package root now resolves to compiled ESM. Browser globals continue through UMD as `UI.Autocomplete`.
-- Load the new v4 component CSS after Frost UI v3 CSS.
+- Load the new v4 component CSS after Frost UI v4 CSS.
 - The non-functional `menuSize` option was removed. Use `maxHeight`, `fullWidth`, and input size classes.
 - `getResults` now receives `{ offset, signal, term? }`. Honor the signal and return `{ results, showMore? }`.
 - String renderer output remains sanitized; DOM nodes are an explicitly trusted rendering path.

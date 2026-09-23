@@ -65,9 +65,9 @@
     ],
     "devDependencies": {
         "@fr0st/eslint-config": "^5.0.3",
-        "@fr0st/query": "^4.1.2",
+        "@fr0st/query": "^5.0.0",
         "@fr0st/stylelint-config": "^4.0.2",
-        "@fr0st/ui": "^3.0.0",
+        "@fr0st/ui": "^4.0.0",
         "@playwright/test": "^1.62.1",
         "autoprefixer": "^10.5.4",
         "clean-css-cli": "^5.6.3",
@@ -81,8 +81,8 @@
         "vite": "^8.2.2"
     },
     "peerDependencies": {
-        "@fr0st/query": "^4.1.2",
-        "@fr0st/ui": "^3.0.0"
+        "@fr0st/query": "^5.0.0",
+        "@fr0st/ui": "^4.0.0"
     },
     "engines": {
         "node": "^20.19.0 || ^22.13.0 || >=24"
