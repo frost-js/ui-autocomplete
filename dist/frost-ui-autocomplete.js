@@ -47,6 +47,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 //#region src/js/autocomplete.js
 /** @import { NodeInput } from '@fr0st/query/src/helpers.js'; */
 	/** @import { Placement, Position } from '@fr0st/ui/src/js/popper/popper.js'; */
+	var window = _fr0st_query.default.getWindow();
 	/**
 	* @typedef {object} AutocompleteLanguage
 	* @property {string} [error='Error loading data.'] The message shown when asynchronous results fail to load.
@@ -354,7 +355,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 				this.hide();
 			});
 			this.#inputEvent = _fr0st_query.default._debounce((_) => {
-				if (!this.node || !_fr0st_query.default.isSame(this.node, this.node.ownerDocument.activeElement)) return;
+				if (!this.node || !_fr0st_query.default.is(this.node, ":focus")) return;
 				if (!_fr0st_query.default.isConnected(this.#menuNode) || this.#transition?.direction === "out") {
 					this.#show("first");
 					return;
@@ -516,6 +517,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 			this.#term = term;
 			const results = this.#getLocalResults(term);
 			this.#renderResults(results, { focus });
+			if (!this.node) return false;
 			this.update();
 			return results.length > 0;
 		}
@@ -535,9 +537,8 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 			const id = (0, _fr0st_ui.generateId)("autocomplete");
 			for (const attribute of INPUT_ATTRIBUTES) this.#inputAttributes.set(attribute, _fr0st_query.default.getAttribute(this.node, attribute));
 			const style = { maxBlockSize: this.options.maxHeight };
-			const window = this.node.ownerDocument.defaultView;
 			const duration = Number(this.options.duration);
-			if (!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches && Number.isFinite(duration) && duration >= 0) style["--ui-autocomplete-transition-duration"] = `${duration}ms`;
+			if (Number.isFinite(duration) && duration >= 0) style["--ui-autocomplete-transition-duration"] = `${duration}ms`;
 			this.#menuNode = _fr0st_query.default.create("ul", {
 				class: this.constructor.classes.menu,
 				style,
@@ -581,7 +582,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		/**
 		* Renders a selectable result option.
 		* @param {string} value The result value.
-		* @returns {HTMLLIElement} The result option.
+		* @returns {HTMLLIElement|null} The result option, or `null` if disposed while rendering.
 		*/
 		#renderItem(value) {
 			const active = (this.node?.value ?? "") === value;
@@ -605,8 +606,9 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 			} catch {
 				content = value;
 			}
+			if (!this.node) return null;
 			if (typeof content === "string") _fr0st_query.default.setHTML(item, this.#sanitize(content));
-			else if (content instanceof this.node.ownerDocument.defaultView.Node && !_fr0st_query.default.isSame(item, content)) _fr0st_query.default.append(item, content);
+			else if ((_fr0st_query.default._isNode(content) || _fr0st_query.default._isFragment(content)) && !_fr0st_query.default.isSame(item, content)) _fr0st_query.default.append(item, content);
 			return item;
 		}
 		/**
@@ -619,9 +621,9 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 			if (!response || typeof response !== "object" || !Array.isArray(response.results) || response.results.some((value) => typeof value !== "string")) throw new TypeError("Autocomplete results must contain a string results array.");
 			const results = response.results;
 			this.#showMore = Boolean(response.showMore) && results.length > 0;
+			_fr0st_query.default.detach(this.#loaderNode);
 			if (request.offset) {
 				this.#data.push(...results);
-				_fr0st_query.default.detach(this.#loaderNode);
 				if (results.length) this.#renderResults(results, {
 					append: true,
 					focus: request.focus
@@ -645,7 +647,12 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 				_fr0st_query.default.detach(this.#loaderNode);
 				_fr0st_query.default.detach(this.#errorNode);
 			} else this.#resetMenu();
-			const newItems = results.map((value) => this.#renderItem(value));
+			const newItems = [];
+			for (const value of results) {
+				const item = this.#renderItem(value);
+				if (!item || !this.node) return;
+				newItems.push(item);
+			}
 			this.#activeItems.push(...newItems);
 			_fr0st_query.default.append(this.#menuNode, newItems);
 			if (focusedNode) this.#focusItem(focusedNode);
@@ -767,6 +774,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 				focus,
 				term
 			});
+			if (!this.node) return;
 			if (!_fr0st_query.default.isConnected(this.#menuNode)) this.#appendMenu();
 			_fr0st_query.default.setStyle(this.#menuNode, { display: "block" });
 			_fr0st_query.default.css(this.#menuNode, "opacity");
@@ -777,7 +785,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 			_fr0st_query.default.setStyle(this.#menuNode, { display: "" });
 			_fr0st_query.default.setAttribute(this.node, { "aria-expanded": true });
 			this.#focusItem(this.#getFocusedItem(), { scroll: true });
-			this.node.ownerDocument.defaultView.requestAnimationFrame((_) => {
+			window.requestAnimationFrame((_) => {
 				if (this.node && this.#transition === transition) this.update();
 			});
 			(0, _fr0st_ui.waitForTransition)(this.#menuNode, ["opacity"]).then((_) => {

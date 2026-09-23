@@ -15,6 +15,7 @@ function normalizeValue(value) {
 //#region src/js/autocomplete.js
 /** @import { NodeInput } from '@fr0st/query/src/helpers.js'; */
 /** @import { Placement, Position } from '@fr0st/ui/src/js/popper/popper.js'; */
+var window = $.getWindow();
 /**
 * @typedef {object} AutocompleteLanguage
 * @property {string} [error='Error loading data.'] The message shown when asynchronous results fail to load.
@@ -322,7 +323,7 @@ var Autocomplete = class extends BaseComponent {
 			this.hide();
 		});
 		this.#inputEvent = $._debounce((_) => {
-			if (!this.node || !$.isSame(this.node, this.node.ownerDocument.activeElement)) return;
+			if (!this.node || !$.is(this.node, ":focus")) return;
 			if (!$.isConnected(this.#menuNode) || this.#transition?.direction === "out") {
 				this.#show("first");
 				return;
@@ -484,6 +485,7 @@ var Autocomplete = class extends BaseComponent {
 		this.#term = term;
 		const results = this.#getLocalResults(term);
 		this.#renderResults(results, { focus });
+		if (!this.node) return false;
 		this.update();
 		return results.length > 0;
 	}
@@ -503,9 +505,8 @@ var Autocomplete = class extends BaseComponent {
 		const id = generateId("autocomplete");
 		for (const attribute of INPUT_ATTRIBUTES) this.#inputAttributes.set(attribute, $.getAttribute(this.node, attribute));
 		const style = { maxBlockSize: this.options.maxHeight };
-		const window = this.node.ownerDocument.defaultView;
 		const duration = Number(this.options.duration);
-		if (!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches && Number.isFinite(duration) && duration >= 0) style["--ui-autocomplete-transition-duration"] = `${duration}ms`;
+		if (Number.isFinite(duration) && duration >= 0) style["--ui-autocomplete-transition-duration"] = `${duration}ms`;
 		this.#menuNode = $.create("ul", {
 			class: this.constructor.classes.menu,
 			style,
@@ -549,7 +550,7 @@ var Autocomplete = class extends BaseComponent {
 	/**
 	* Renders a selectable result option.
 	* @param {string} value The result value.
-	* @returns {HTMLLIElement} The result option.
+	* @returns {HTMLLIElement|null} The result option, or `null` if disposed while rendering.
 	*/
 	#renderItem(value) {
 		const active = (this.node?.value ?? "") === value;
@@ -573,8 +574,9 @@ var Autocomplete = class extends BaseComponent {
 		} catch {
 			content = value;
 		}
+		if (!this.node) return null;
 		if (typeof content === "string") $.setHTML(item, this.#sanitize(content));
-		else if (content instanceof this.node.ownerDocument.defaultView.Node && !$.isSame(item, content)) $.append(item, content);
+		else if (($._isNode(content) || $._isFragment(content)) && !$.isSame(item, content)) $.append(item, content);
 		return item;
 	}
 	/**
@@ -587,9 +589,9 @@ var Autocomplete = class extends BaseComponent {
 		if (!response || typeof response !== "object" || !Array.isArray(response.results) || response.results.some((value) => typeof value !== "string")) throw new TypeError("Autocomplete results must contain a string results array.");
 		const results = response.results;
 		this.#showMore = Boolean(response.showMore) && results.length > 0;
+		$.detach(this.#loaderNode);
 		if (request.offset) {
 			this.#data.push(...results);
-			$.detach(this.#loaderNode);
 			if (results.length) this.#renderResults(results, {
 				append: true,
 				focus: request.focus
@@ -613,7 +615,12 @@ var Autocomplete = class extends BaseComponent {
 			$.detach(this.#loaderNode);
 			$.detach(this.#errorNode);
 		} else this.#resetMenu();
-		const newItems = results.map((value) => this.#renderItem(value));
+		const newItems = [];
+		for (const value of results) {
+			const item = this.#renderItem(value);
+			if (!item || !this.node) return;
+			newItems.push(item);
+		}
 		this.#activeItems.push(...newItems);
 		$.append(this.#menuNode, newItems);
 		if (focusedNode) this.#focusItem(focusedNode);
@@ -735,6 +742,7 @@ var Autocomplete = class extends BaseComponent {
 			focus,
 			term
 		});
+		if (!this.node) return;
 		if (!$.isConnected(this.#menuNode)) this.#appendMenu();
 		$.setStyle(this.#menuNode, { display: "block" });
 		$.css(this.#menuNode, "opacity");
@@ -745,7 +753,7 @@ var Autocomplete = class extends BaseComponent {
 		$.setStyle(this.#menuNode, { display: "" });
 		$.setAttribute(this.node, { "aria-expanded": true });
 		this.#focusItem(this.#getFocusedItem(), { scroll: true });
-		this.node.ownerDocument.defaultView.requestAnimationFrame((_) => {
+		window.requestAnimationFrame((_) => {
 			if (this.node && this.#transition === transition) this.update();
 		});
 		waitForTransition(this.#menuNode, ["opacity"]).then((_) => {

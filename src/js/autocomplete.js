@@ -5,6 +5,8 @@ import $ from '@fr0st/query';
 import { BaseComponent, generateId, Popper, waitForTransition } from '@fr0st/ui';
 import { normalizeValue } from './helpers.js';
 
+const window = $.getWindow();
+
 /**
  * @typedef {object} AutocompleteLanguage
  * @property {string} [error='Error loading data.'] The message shown when asynchronous results fail to load.
@@ -449,7 +451,7 @@ export default class Autocomplete extends BaseComponent {
         this.#inputEvent = $._debounce((_) => {
             if (
                 !this.node ||
-                !$.isSame(this.node, this.node.ownerDocument.activeElement)
+                !$.is(this.node, ':focus')
             ) {
                 return;
             }
@@ -696,6 +698,11 @@ export default class Autocomplete extends BaseComponent {
         const results = this.#getLocalResults(term);
 
         this.#renderResults(results, { focus });
+
+        if (!this.node) {
+            return false;
+        }
+
         this.update();
 
         return results.length > 0;
@@ -723,11 +730,9 @@ export default class Autocomplete extends BaseComponent {
         }
 
         const style = { maxBlockSize: this.options.maxHeight };
-        const window = this.node.ownerDocument.defaultView;
         const duration = Number(this.options.duration);
-        const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
-        if (!reduceMotion && Number.isFinite(duration) && duration >= 0) {
+        if (Number.isFinite(duration) && duration >= 0) {
             style['--ui-autocomplete-transition-duration'] = `${duration}ms`;
         }
 
@@ -782,7 +787,7 @@ export default class Autocomplete extends BaseComponent {
     /**
      * Renders a selectable result option.
      * @param {string} value The result value.
-     * @returns {HTMLLIElement} The result option.
+     * @returns {HTMLLIElement|null} The result option, or `null` if disposed while rendering.
      */
     #renderItem(value) {
         const active = (this.node?.value ?? '') === value;
@@ -812,10 +817,14 @@ export default class Autocomplete extends BaseComponent {
             content = value;
         }
 
+        if (!this.node) {
+            return null;
+        }
+
         if (typeof content === 'string') {
             $.setHTML(item, this.#sanitize(content));
         } else if (
-            content instanceof this.node.ownerDocument.defaultView.Node &&
+            ($._isNode(content) || $._isFragment(content)) &&
             !$.isSame(item, content)
         ) {
             $.append(item, content);
@@ -846,9 +855,10 @@ export default class Autocomplete extends BaseComponent {
         const results = response.results;
         this.#showMore = Boolean(response.showMore) && results.length > 0;
 
+        $.detach(this.#loaderNode);
+
         if (request.offset) {
             this.#data.push(...results);
-            $.detach(this.#loaderNode);
 
             if (results.length) {
                 this.#renderResults(results, { append: true, focus: request.focus });
@@ -881,7 +891,18 @@ export default class Autocomplete extends BaseComponent {
             this.#resetMenu();
         }
 
-        const newItems = results.map((value) => this.#renderItem(value));
+        const newItems = [];
+
+        for (const value of results) {
+            const item = this.#renderItem(value);
+
+            // Rendering callbacks may dispose the component.
+            if (!item || !this.node) {
+                return;
+            }
+
+            newItems.push(item);
+        }
 
         this.#activeItems.push(...newItems);
         $.append(this.#menuNode, newItems);
@@ -1096,6 +1117,10 @@ export default class Autocomplete extends BaseComponent {
             this.#requestData({ focus, term });
         }
 
+        if (!this.node) {
+            return;
+        }
+
         const alreadyConnected = $.isConnected(this.#menuNode);
 
         if (!alreadyConnected) {
@@ -1116,7 +1141,7 @@ export default class Autocomplete extends BaseComponent {
 
         this.#focusItem(this.#getFocusedItem(), { scroll: true });
 
-        this.node.ownerDocument.defaultView.requestAnimationFrame((_) => {
+        window.requestAnimationFrame((_) => {
             if (this.node && this.#transition === transition) {
                 this.update();
             }
