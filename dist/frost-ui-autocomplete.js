@@ -197,7 +197,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		hide() {
 			this.#inputEvent?.cancel();
 			this.#scrollEvent?.cancel();
-			if (!this.node || !_fr0st_query.default.isConnected(this.#menuNode) || this.#transition?.direction === "out" || !_fr0st_query.default.triggerOne(this.node, "hide.ui.autocomplete")) return;
+			if (!this.node || !_fr0st_query.default.isConnected(this.#menuNode) || this.#transition?.direction === "out" || !_fr0st_query.default.triggerOne(this.node, "hide.ui.autocomplete") || !this.node) return;
 			this.#cancelRequest();
 			const transition = { direction: "out" };
 			this.#transition = transition;
@@ -349,7 +349,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 			});
 			if (this.#hasRemoteResults()) {
 				this.#scrollEvent = _fr0st_query.default._throttle((_) => {
-					if (!this.node || this.#request || !this.#showMore) return;
+					if (!this.node || !_fr0st_query.default.isConnected(this.#menuNode) || this.#transition?.direction === "out" || this.#request || !this.#showMore) return;
 					const height = _fr0st_query.default.height(this.#menuNode);
 					const scrollHeight = _fr0st_query.default.height(this.#menuNode, { boxSize: _fr0st_query.default.SCROLL_BOX });
 					if (_fr0st_query.default.getScrollY(this.#menuNode) < scrollHeight - height - height / 4) return;

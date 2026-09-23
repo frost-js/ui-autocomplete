@@ -165,7 +165,7 @@ var Autocomplete = class extends BaseComponent {
 	hide() {
 		this.#inputEvent?.cancel();
 		this.#scrollEvent?.cancel();
-		if (!this.node || !$.isConnected(this.#menuNode) || this.#transition?.direction === "out" || !$.triggerOne(this.node, "hide.ui.autocomplete")) return;
+		if (!this.node || !$.isConnected(this.#menuNode) || this.#transition?.direction === "out" || !$.triggerOne(this.node, "hide.ui.autocomplete") || !this.node) return;
 		this.#cancelRequest();
 		const transition = { direction: "out" };
 		this.#transition = transition;
@@ -317,7 +317,7 @@ var Autocomplete = class extends BaseComponent {
 		});
 		if (this.#hasRemoteResults()) {
 			this.#scrollEvent = $._throttle((_) => {
-				if (!this.node || this.#request || !this.#showMore) return;
+				if (!this.node || !$.isConnected(this.#menuNode) || this.#transition?.direction === "out" || this.#request || !this.#showMore) return;
 				const height = $.height(this.#menuNode);
 				const scrollHeight = $.height(this.#menuNode, { boxSize: $.SCROLL_BOX });
 				if ($.getScrollY(this.#menuNode) < scrollHeight - height - height / 4) return;

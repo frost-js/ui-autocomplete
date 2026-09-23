@@ -213,7 +213,8 @@ export default class Autocomplete extends BaseComponent {
             !this.node ||
             !$.isConnected(this.#menuNode) ||
             this.#transition?.direction === 'out' ||
-            !$.triggerOne(this.node, 'hide.ui.autocomplete')
+            !$.triggerOne(this.node, 'hide.ui.autocomplete') ||
+            !this.node
         ) {
             return;
         }
@@ -471,6 +472,8 @@ export default class Autocomplete extends BaseComponent {
             this.#scrollEvent = $._throttle((_) => {
                 if (
                     !this.node ||
+                    !$.isConnected(this.#menuNode) ||
+                    this.#transition?.direction === 'out' ||
                     this.#request ||
                     !this.#showMore
                 ) {
