@@ -274,7 +274,7 @@ var Autocomplete = class extends BaseComponent {
 		});
 		$.addEvent(this.node, "input.ui.autocomplete", this.#inputEvent);
 		$.addEvent(this.node, "keydown.ui.autocomplete", (e) => {
-			if (![
+			if (e.isComposing || ![
 				"ArrowDown",
 				"ArrowUp",
 				"Enter",
@@ -631,6 +631,7 @@ var Autocomplete = class extends BaseComponent {
 			this.#loadingScroll = false;
 			this.#setBusy(false);
 			this.update();
+			if (this.#showMore && this.#menuNode.scrollHeight <= this.#menuNode.clientHeight) this.#scrollEvent();
 		});
 	}
 	/**

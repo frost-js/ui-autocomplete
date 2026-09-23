@@ -306,7 +306,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 			});
 			_fr0st_query.default.addEvent(this.node, "input.ui.autocomplete", this.#inputEvent);
 			_fr0st_query.default.addEvent(this.node, "keydown.ui.autocomplete", (e) => {
-				if (![
+				if (e.isComposing || ![
 					"ArrowDown",
 					"ArrowUp",
 					"Enter",
@@ -663,6 +663,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 				this.#loadingScroll = false;
 				this.#setBusy(false);
 				this.update();
+				if (this.#showMore && this.#menuNode.scrollHeight <= this.#menuNode.clientHeight) this.#scrollEvent();
 			});
 		}
 		/**

@@ -403,7 +403,7 @@ export default class Autocomplete extends BaseComponent {
         $.addEvent(this.node, 'input.ui.autocomplete', this.#inputEvent);
 
         $.addEvent(this.node, 'keydown.ui.autocomplete', (e) => {
-            if (!['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(e.key)) {
+            if (e.isComposing || !['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(e.key)) {
                 return;
             }
 
@@ -914,6 +914,13 @@ export default class Autocomplete extends BaseComponent {
                 this.#loadingScroll = false;
                 this.#setBusy(false);
                 this.update();
+
+                if (
+                    this.#showMore &&
+                    this.#menuNode.scrollHeight <= this.#menuNode.clientHeight
+                ) {
+                    this.#scrollEvent();
+                }
             });
     }
 
