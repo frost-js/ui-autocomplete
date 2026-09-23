@@ -703,7 +703,7 @@ var Autocomplete = class extends BaseComponent {
 			this.#resetMenu();
 			return;
 		}
-		if (!$.triggerOne(this.node, "show.ui.autocomplete")) return;
+		if (!$.triggerOne(this.node, "show.ui.autocomplete") || !this.node) return;
 		if (localResults) {
 			this.#term = term;
 			this.#renderResults(localResults, { focus });

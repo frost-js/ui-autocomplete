@@ -735,7 +735,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 				this.#resetMenu();
 				return;
 			}
-			if (!_fr0st_query.default.triggerOne(this.node, "show.ui.autocomplete")) return;
+			if (!_fr0st_query.default.triggerOne(this.node, "show.ui.autocomplete") || !this.node) return;
 			if (localResults) {
 				this.#term = term;
 				this.#renderResults(localResults, { focus });

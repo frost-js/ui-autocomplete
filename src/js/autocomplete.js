@@ -1028,7 +1028,10 @@ export default class Autocomplete extends BaseComponent {
             return;
         }
 
-        if (!$.triggerOne(this.node, 'show.ui.autocomplete')) {
+        if (
+            !$.triggerOne(this.node, 'show.ui.autocomplete') ||
+            !this.node
+        ) {
             return;
         }
 
