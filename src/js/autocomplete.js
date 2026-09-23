@@ -228,10 +228,6 @@ export default class Autocomplete extends BaseComponent {
             this.node,
             'blur.ui.autocomplete input.ui.autocomplete keydown.ui.autocomplete',
         );
-        $.removeEvent(
-            this.#menuNode,
-            'mousedown.ui.autocomplete click.ui.autocomplete mouseover.ui.autocomplete scroll.ui.autocomplete',
-        );
         $.remove(this.#menuNode);
 
         for (const [attribute, value] of this.#inputAttributes) {

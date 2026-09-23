@@ -232,7 +232,6 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 				this.#popper = null;
 			}
 			_fr0st_query.default.removeEvent(this.node, "blur.ui.autocomplete input.ui.autocomplete keydown.ui.autocomplete");
-			_fr0st_query.default.removeEvent(this.#menuNode, "mousedown.ui.autocomplete click.ui.autocomplete mouseover.ui.autocomplete scroll.ui.autocomplete");
 			_fr0st_query.default.remove(this.#menuNode);
 			for (const [attribute, value] of this.#inputAttributes) if (value === null) _fr0st_query.default.removeAttribute(this.node, attribute);
 			else _fr0st_query.default.setAttribute(this.node, attribute, value);
