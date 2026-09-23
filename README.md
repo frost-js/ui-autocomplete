@@ -277,7 +277,7 @@ Events are dispatched on the input and bubble through the DOM.
 Calling `preventDefault()` during `show.ui.autocomplete` or `hide.ui.autocomplete` cancels that action. Rapid opposing transitions are token-protected, so an earlier transition cannot emit a stale completion event.
 
 ```js
-document.querySelector('#fruit').addEventListener('change.ui.autocomplete', (event) => {
+$.addEvent('#fruit', 'change.ui.autocomplete', (event) => {
     console.log('Selected:', event.target.value);
 });
 ```
