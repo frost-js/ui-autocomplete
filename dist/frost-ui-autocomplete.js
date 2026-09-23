@@ -638,10 +638,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		*/
 		#renderResults(results, { append = false, focus = "first" } = {}) {
 			const focusedNode = append ? this.#getFocusedItem() : null;
-			if (append) {
-				_fr0st_query.default.detach(this.#loaderNode);
-				_fr0st_query.default.detach(this.#errorNode);
-			} else this.#resetMenu();
+			if (!append) this.#resetMenu();
 			const newItems = [];
 			for (const value of results) {
 				const item = this.#renderItem(value);
@@ -680,7 +677,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 			};
 			this.#request = request;
 			if (this.#menuNode) _fr0st_query.default.setAttribute(this.#menuNode, { "aria-busy": true });
-			if (!_fr0st_query.default.isSame(this.#menuNode.lastElementChild, this.#loaderNode)) _fr0st_query.default.append(this.#menuNode, this.#loaderNode);
+			if (this.#menuNode && this.#loaderNode) _fr0st_query.default.append(this.#menuNode, this.#loaderNode);
 			this.#loadResults(request);
 		}
 		/**

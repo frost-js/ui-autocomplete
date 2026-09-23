@@ -881,10 +881,7 @@ export default class Autocomplete extends BaseComponent {
     #renderResults(results, { append = false, focus = 'first' } = {}) {
         const focusedNode = append ? this.#getFocusedItem() : null;
 
-        if (append) {
-            $.detach(this.#loaderNode);
-            $.detach(this.#errorNode);
-        } else {
+        if (!append) {
             this.#resetMenu();
         }
 
@@ -954,7 +951,7 @@ export default class Autocomplete extends BaseComponent {
             $.setAttribute(this.#menuNode, { 'aria-busy': true });
         }
 
-        if (!$.isSame(this.#menuNode.lastElementChild, this.#loaderNode)) {
+        if (this.#menuNode && this.#loaderNode) {
             $.append(this.#menuNode, this.#loaderNode);
         }
 

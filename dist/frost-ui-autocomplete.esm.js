@@ -606,10 +606,7 @@ var Autocomplete = class extends BaseComponent {
 	*/
 	#renderResults(results, { append = false, focus = "first" } = {}) {
 		const focusedNode = append ? this.#getFocusedItem() : null;
-		if (append) {
-			$.detach(this.#loaderNode);
-			$.detach(this.#errorNode);
-		} else this.#resetMenu();
+		if (!append) this.#resetMenu();
 		const newItems = [];
 		for (const value of results) {
 			const item = this.#renderItem(value);
@@ -648,7 +645,7 @@ var Autocomplete = class extends BaseComponent {
 		};
 		this.#request = request;
 		if (this.#menuNode) $.setAttribute(this.#menuNode, { "aria-busy": true });
-		if (!$.isSame(this.#menuNode.lastElementChild, this.#loaderNode)) $.append(this.#menuNode, this.#loaderNode);
+		if (this.#menuNode && this.#loaderNode) $.append(this.#menuNode, this.#loaderNode);
 		this.#loadResults(request);
 	}
 	/**
