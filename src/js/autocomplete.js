@@ -216,6 +216,11 @@ export default class Autocomplete extends BaseComponent {
 
         this.#transition = null;
         this.#cancelRequest();
+
+        if (!this.node) {
+            return;
+        }
+
         this.#inputEvent?.cancel();
         this.#scrollEvent?.cancel();
 
@@ -275,6 +280,10 @@ export default class Autocomplete extends BaseComponent {
         }
 
         this.#cancelRequest();
+
+        if (!this.node) {
+            return;
+        }
 
         const transition = { direction: 'out' };
         this.#transition = transition;
@@ -358,14 +367,15 @@ export default class Autocomplete extends BaseComponent {
     #cancelRequest() {
         this.#loadResults?.cancel();
 
-        if (this.#request) {
-            this.#request.controller.abort();
-            this.#request = null;
-        }
+        const request = this.#request;
+        this.#request = null;
 
         if (this.#menuNode) {
             $.setAttribute(this.#menuNode, { 'aria-busy': false });
         }
+
+        // Abort listeners run synchronously and may dispose the component.
+        request?.controller.abort();
     }
 
     /**
@@ -677,6 +687,10 @@ export default class Autocomplete extends BaseComponent {
         if (!this.#meetsMinimumSearch(term)) {
             this.#cancelRequest();
 
+            if (!this.node) {
+                return false;
+            }
+
             this.#term = term;
             this.#resetMenu();
             return false;
@@ -924,6 +938,10 @@ export default class Autocomplete extends BaseComponent {
 
         if (!offset) {
             this.#cancelRequest();
+
+            if (!this.node) {
+                return;
+            }
 
             this.#term = term;
             this.#data = [];

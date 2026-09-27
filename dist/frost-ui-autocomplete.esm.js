@@ -193,6 +193,7 @@ var Autocomplete = class extends BaseComponent {
 		if (!this.node) return;
 		this.#transition = null;
 		this.#cancelRequest();
+		if (!this.node) return;
 		this.#inputEvent?.cancel();
 		this.#scrollEvent?.cancel();
 		if (this.#popper) {
@@ -223,6 +224,7 @@ var Autocomplete = class extends BaseComponent {
 		if (!this.node || !$.isConnected(this.#menuNode) || this.#transition?.direction === "out") return;
 		if (!$.triggerOne(this.node, "hide.ui.autocomplete") || !this.node) return;
 		this.#cancelRequest();
+		if (!this.node) return;
 		const transition = { direction: "out" };
 		this.#transition = transition;
 		$.setStyle(this.#menuNode, { display: "block" });
@@ -275,11 +277,10 @@ var Autocomplete = class extends BaseComponent {
 	*/
 	#cancelRequest() {
 		this.#loadResults?.cancel();
-		if (this.#request) {
-			this.#request.controller.abort();
-			this.#request = null;
-		}
+		const request = this.#request;
+		this.#request = null;
 		if (this.#menuNode) $.setAttribute(this.#menuNode, { "aria-busy": false });
+		request?.controller.abort();
 	}
 	/**
 	* Creates the menu Popper.
@@ -469,6 +470,7 @@ var Autocomplete = class extends BaseComponent {
 	#load(term, focus) {
 		if (!this.#meetsMinimumSearch(term)) {
 			this.#cancelRequest();
+			if (!this.node) return false;
 			this.#term = term;
 			this.#resetMenu();
 			return false;
@@ -631,6 +633,7 @@ var Autocomplete = class extends BaseComponent {
 		if (!this.node || offset && (this.#request || term !== this.#term)) return;
 		if (!offset) {
 			this.#cancelRequest();
+			if (!this.node) return;
 			this.#term = term;
 			this.#data = [];
 			this.#showMore = false;

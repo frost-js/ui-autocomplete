@@ -225,6 +225,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 			if (!this.node) return;
 			this.#transition = null;
 			this.#cancelRequest();
+			if (!this.node) return;
 			this.#inputEvent?.cancel();
 			this.#scrollEvent?.cancel();
 			if (this.#popper) {
@@ -255,6 +256,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 			if (!this.node || !_fr0st_query.default.isConnected(this.#menuNode) || this.#transition?.direction === "out") return;
 			if (!_fr0st_query.default.triggerOne(this.node, "hide.ui.autocomplete") || !this.node) return;
 			this.#cancelRequest();
+			if (!this.node) return;
 			const transition = { direction: "out" };
 			this.#transition = transition;
 			_fr0st_query.default.setStyle(this.#menuNode, { display: "block" });
@@ -307,11 +309,10 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		*/
 		#cancelRequest() {
 			this.#loadResults?.cancel();
-			if (this.#request) {
-				this.#request.controller.abort();
-				this.#request = null;
-			}
+			const request = this.#request;
+			this.#request = null;
 			if (this.#menuNode) _fr0st_query.default.setAttribute(this.#menuNode, { "aria-busy": false });
+			request?.controller.abort();
 		}
 		/**
 		* Creates the menu Popper.
@@ -501,6 +502,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		#load(term, focus) {
 			if (!this.#meetsMinimumSearch(term)) {
 				this.#cancelRequest();
+				if (!this.node) return false;
 				this.#term = term;
 				this.#resetMenu();
 				return false;
@@ -663,6 +665,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 			if (!this.node || offset && (this.#request || term !== this.#term)) return;
 			if (!offset) {
 				this.#cancelRequest();
+				if (!this.node) return;
 				this.#term = term;
 				this.#data = [];
 				this.#showMore = false;
