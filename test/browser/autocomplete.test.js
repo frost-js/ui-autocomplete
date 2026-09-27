@@ -457,153 +457,159 @@ test.describe('Autocomplete', () => {
             });
         });
 
-        test('opens on input and selects with the mouse', async ({ page }) => {
-            const input = page.locator('#autocomplete');
-            await input.fill('o');
-            const item = page.locator('.autocomplete-item').filter({ hasText: 'One' });
-            await expect(item).toBeVisible();
-            await item.click();
+        test.describe('mouse', () => {
+            test('opens on input and selects with the mouse', async ({ page }) => {
+                const input = page.locator('#autocomplete');
+                await input.fill('o');
+                const item = page.locator('.autocomplete-item').filter({ hasText: 'One' });
+                await expect(item).toBeVisible();
+                await item.click();
 
-            await expect(input).toHaveValue('One');
-            await expect(input).toBeFocused();
-            await expect(page.locator('.autocomplete-menu')).toHaveCount(0);
-        });
-
-        test('updates focus on mouseover', async ({ page }) => {
-            const input = page.locator('#autocomplete');
-            await input.focus();
-            await page.evaluate((_) => $.getData('#autocomplete', 'autocomplete').show());
-            const item = page.locator('.autocomplete-item').nth(1);
-            await item.hover();
-
-            await expect(item).toHaveClass(/focus/);
-            await expect(input).toHaveAttribute('aria-activedescendant', await item.getAttribute('id'));
-        });
-
-        test('navigates with arrow keys and keeps boundary focus', async ({ page }) => {
-            const input = page.locator('#autocomplete');
-            await input.focus();
-            await input.press('ArrowDown');
-            const items = page.locator('.autocomplete-item');
-            await expect(items.first()).toHaveClass(/focus/);
-            await input.press('ArrowDown');
-            await expect(items.nth(1)).toHaveClass(/focus/);
-            await input.press('ArrowUp');
-            await expect(items.first()).toHaveClass(/focus/);
-            await input.press('ArrowUp');
-            await expect(items.first()).toHaveClass(/focus/);
-        });
-
-        test('opens at the last result with ArrowUp', async ({ page }) => {
-            const input = page.locator('#autocomplete');
-            await input.focus();
-            await input.press('ArrowUp');
-
-            await expect(page.locator('.autocomplete-item').last()).toHaveClass(/focus/);
-        });
-
-        test('selects with Enter without submitting the form', async ({ page }) => {
-            await page.evaluate((_) => {
-                $.setHtml(
-                    document.body,
-                    '<form id="form"><input id="autocomplete"><button>Submit</button></form>',
-                );
-                window.submits = 0;
-                $.addEvent('#form', 'submit', (event) => {
-                    event.preventDefault();
-                    window.submits++;
-                });
-                UI.Autocomplete.init($.findOne('#autocomplete'), {
-                    data: ['One'],
-                    minSearch: 0,
-                });
+                await expect(input).toHaveValue('One');
+                await expect(input).toBeFocused();
+                await expect(page.locator('.autocomplete-menu')).toHaveCount(0);
             });
-            const input = page.locator('#autocomplete');
-            await input.focus();
-            await input.press('ArrowDown');
-            await input.press('Enter');
 
-            await expect(input).toHaveValue('One');
-            expect(await page.evaluate((_) => window.submits)).toBe(0);
-        });
+            test('updates focus on mouseover', async ({ page }) => {
+                const input = page.locator('#autocomplete');
+                await input.focus();
+                await page.evaluate((_) => $.getData('#autocomplete', 'autocomplete').show());
+                const item = page.locator('.autocomplete-item').nth(1);
+                await item.hover();
 
-        test('closes with Escape without propagating to a parent handler', async ({ page }) => {
-            await page.evaluate((_) => {
-                window.escapes = 0;
-                $.addEvent(document.body, 'keydown', (event) => {
-                    if (event.key === 'Escape') {
-                        window.escapes++;
-                    }
-                });
+                await expect(item).toHaveClass(/focus/);
+                await expect(input).toHaveAttribute('aria-activedescendant', await item.getAttribute('id'));
             });
-            const input = page.locator('#autocomplete');
-            await input.focus();
-            await input.press('ArrowDown');
-            await input.press('Escape');
 
-            await expect(page.locator('.autocomplete-menu')).toHaveCount(0);
-            expect(await page.evaluate((_) => window.escapes)).toBe(0);
-        });
+            test('ignores non-primary result clicks', async ({ page }) => {
+                const input = page.locator('#autocomplete');
+                await input.focus();
+                await input.press('ArrowDown');
+                await page.locator('.autocomplete-item').first().dispatchEvent('click', { button: 2 });
 
-        test('closes on blur', async ({ page }) => {
-            const input = page.locator('#autocomplete');
-            await input.focus();
-            await input.press('ArrowDown');
-            await page.locator('#outside').focus();
+                await expect(input).toHaveValue('');
+                await expect(page.locator('.autocomplete-menu')).toBeVisible();
+            });
 
-            await expect(page.locator('#outside')).toBeFocused();
-            await expect(page.locator('.autocomplete-menu')).toHaveCount(0);
-        });
-
-        test.describe('queued input', () => {
-            test.use({ mockClock: true });
-
-            test('ignores queued input work after focus moves away', async ({ page }) => {
-                await page.evaluate((_) => {
+            test('does not suppress the context menu', async ({ page }) => {
+                const allowed = await page.evaluate((_) => {
                     const input = $.findOne('#autocomplete');
                     input.focus();
-                    $.setValue(input, 'o');
-                    input.dispatchEvent(new Event('input', { bubbles: true }));
-                    $.focus('#outside');
+                    $.getData(input, 'autocomplete').show();
+                    return $.findOne('.autocomplete-item').dispatchEvent(
+                        new MouseEvent('contextmenu', { bubbles: true, cancelable: true }),
+                    );
                 });
-                await page.clock.runFor(1);
+
+                expect(allowed).toBe(true);
+            });
+        });
+
+        test.describe('keyboard', () => {
+            test('navigates with arrow keys and keeps boundary focus', async ({ page }) => {
+                const input = page.locator('#autocomplete');
+                await input.focus();
+                await input.press('ArrowDown');
+                const items = page.locator('.autocomplete-item');
+                await expect(items.first()).toHaveClass(/focus/);
+                await input.press('ArrowDown');
+                await expect(items.nth(1)).toHaveClass(/focus/);
+                await input.press('ArrowUp');
+                await expect(items.first()).toHaveClass(/focus/);
+                await input.press('ArrowUp');
+                await expect(items.first()).toHaveClass(/focus/);
+            });
+
+            test('opens at the last result with ArrowUp', async ({ page }) => {
+                const input = page.locator('#autocomplete');
+                await input.focus();
+                await input.press('ArrowUp');
+
+                await expect(page.locator('.autocomplete-item').last()).toHaveClass(/focus/);
+            });
+
+            test('selects with Enter without submitting the form', async ({ page }) => {
+                await page.evaluate((_) => {
+                    $.setHtml(
+                        document.body,
+                        '<form id="form"><input id="autocomplete"><button>Submit</button></form>',
+                    );
+                    window.submits = 0;
+                    $.addEvent('#form', 'submit', (event) => {
+                        event.preventDefault();
+                        window.submits++;
+                    });
+                    UI.Autocomplete.init($.findOne('#autocomplete'), {
+                        data: ['One'],
+                        minSearch: 0,
+                    });
+                });
+                const input = page.locator('#autocomplete');
+                await input.focus();
+                await input.press('ArrowDown');
+                await input.press('Enter');
+
+                await expect(input).toHaveValue('One');
+                expect(await page.evaluate((_) => window.submits)).toBe(0);
+            });
+
+            test('closes with Escape without propagating to a parent handler', async ({ page }) => {
+                await page.evaluate((_) => {
+                    window.escapes = 0;
+                    $.addEvent(document.body, 'keydown', (event) => {
+                        if (event.key === 'Escape') {
+                            window.escapes++;
+                        }
+                    });
+                });
+                const input = page.locator('#autocomplete');
+                await input.focus();
+                await input.press('ArrowDown');
+                await input.press('Escape');
+
+                await expect(page.locator('.autocomplete-menu')).toHaveCount(0);
+                expect(await page.evaluate((_) => window.escapes)).toBe(0);
+            });
+
+            test('ignores unrelated keys without changing the open menu', async ({ page }) => {
+                const input = page.locator('#autocomplete');
+                await input.focus();
+                await input.press('ArrowDown');
+                await input.press('Shift');
+
+                await expect(page.locator('.autocomplete-menu')).toBeVisible();
+                await expect(page.locator('.autocomplete-item').first()).toHaveClass(/focus/);
+            });
+        });
+
+        test.describe('focus and input', () => {
+            test('closes on blur', async ({ page }) => {
+                const input = page.locator('#autocomplete');
+                await input.focus();
+                await input.press('ArrowDown');
+                await page.locator('#outside').focus();
 
                 await expect(page.locator('#outside')).toBeFocused();
                 await expect(page.locator('.autocomplete-menu')).toHaveCount(0);
             });
-        });
 
-        test('ignores unrelated keys without changing the open menu', async ({ page }) => {
-            const input = page.locator('#autocomplete');
-            await input.focus();
-            await input.press('ArrowDown');
-            await input.press('Shift');
+            test.describe('queued input', () => {
+                test.use({ mockClock: true });
 
-            await expect(page.locator('.autocomplete-menu')).toBeVisible();
-            await expect(page.locator('.autocomplete-item').first()).toHaveClass(/focus/);
-        });
+                test('ignores queued input work after focus moves away', async ({ page }) => {
+                    await page.evaluate((_) => {
+                        const input = $.findOne('#autocomplete');
+                        input.focus();
+                        $.setValue(input, 'o');
+                        input.dispatchEvent(new Event('input', { bubbles: true }));
+                        $.focus('#outside');
+                    });
+                    await page.clock.runFor(1);
 
-        test('ignores non-primary result clicks', async ({ page }) => {
-            const input = page.locator('#autocomplete');
-            await input.focus();
-            await input.press('ArrowDown');
-            await page.locator('.autocomplete-item').first().dispatchEvent('click', { button: 2 });
-
-            await expect(input).toHaveValue('');
-            await expect(page.locator('.autocomplete-menu')).toBeVisible();
-        });
-
-        test('does not suppress the context menu', async ({ page }) => {
-            const allowed = await page.evaluate((_) => {
-                const input = $.findOne('#autocomplete');
-                input.focus();
-                $.getData(input, 'autocomplete').show();
-                return $.findOne('.autocomplete-item').dispatchEvent(
-                    new MouseEvent('contextmenu', { bubbles: true, cancelable: true }),
-                );
+                    await expect(page.locator('#outside')).toBeFocused();
+                    await expect(page.locator('.autocomplete-menu')).toHaveCount(0);
+                });
             });
-
-            expect(allowed).toBe(true);
         });
     });
 
@@ -685,80 +691,6 @@ test.describe('Autocomplete', () => {
 
             await expect(page.locator('.autocomplete-item')).toHaveText('Two');
         });
-    });
-
-    test.describe('rendering and sanitization', () => {
-        test('sanitizes string rendering', async ({ page }) => {
-            await page.evaluate((_) => {
-                UI.Autocomplete.init($.findOne('#autocomplete'), {
-                    data: ['One'],
-                    minSearch: 0,
-                    renderResult: (_) => '<strong>Safe</strong><script data-unsafe>Unsafe</script>',
-                }).show();
-            });
-
-            await expect(page.locator('.autocomplete-item strong')).toHaveText('Safe');
-            await expect(page.locator('[data-unsafe]')).toHaveCount(0);
-        });
-
-        test('appends DOM nodes without cloning', async ({ page }) => {
-            expect(await page.evaluate((_) => {
-                UI.Autocomplete.init($.findOne('#autocomplete'), {
-                    data: ['One'],
-                    minSearch: 0,
-                    renderResult(value) {
-                        const node = $.create('em', { text: value });
-                        window.renderedNode = node;
-                        return node;
-                    },
-                }).show();
-                return $.findOne('.autocomplete-item em') === window.renderedNode;
-            })).toBe(true);
-
-            await expect(page.locator('.autocomplete-item em')).toHaveText('One');
-        });
-
-        for (const { name, callbacks } of [
-            { name: 'renderResult', callbacks: ['renderResult'] },
-            { name: 'sanitize', callbacks: ['sanitize'] },
-            { name: 'both rendering callbacks', callbacks: ['renderResult', 'sanitize'] },
-        ]) {
-            test(`falls back safely when ${name} throws`, async ({ page }) => {
-                await page.evaluate((callbacks) => {
-                    const options = {
-                        data: ['One'],
-                        minSearch: 0,
-                        renderResult: (_) => '<strong>One</strong><script data-unsafe>Unsafe</script>',
-                    };
-                    for (const callback of callbacks) {
-                        options[callback] = () => {
-                            throw new Error(`${callback} failed`);
-                        };
-                    }
-                    UI.Autocomplete.init($.findOne('#autocomplete'), options).show();
-                }, callbacks);
-
-                await expect(page.locator('.autocomplete-item')).toHaveText('One');
-                await expect(page.locator('[data-unsafe]')).toHaveCount(0);
-            });
-        }
-
-        for (const returnsItem of [false, true]) {
-            test(`keeps an accessible empty item when renderResult returns ${returnsItem ? 'the item itself' : 'null'}`, async ({ page }) => {
-                await page.evaluate((returnsItem) => {
-                    UI.Autocomplete.init($.findOne('#autocomplete'), {
-                        data: ['One'],
-                        minSearch: 0,
-                        renderResult: (_, item) => returnsItem ? item : null,
-                    }).show();
-                }, returnsItem);
-
-                const item = page.locator('.autocomplete-item');
-                await expect(item).toHaveCount(1);
-                await expect(item).toBeEmpty();
-                await expect(item).toHaveAttribute('aria-label', 'One');
-            });
-        }
     });
 
     test.describe('matching and sorting', () => {
@@ -861,6 +793,80 @@ test.describe('Autocomplete', () => {
 
             await expect(page.locator('.autocomplete-item')).toHaveText('One');
         });
+    });
+
+    test.describe('rendering and sanitization', () => {
+        test('sanitizes string rendering', async ({ page }) => {
+            await page.evaluate((_) => {
+                UI.Autocomplete.init($.findOne('#autocomplete'), {
+                    data: ['One'],
+                    minSearch: 0,
+                    renderResult: (_) => '<strong>Safe</strong><script data-unsafe>Unsafe</script>',
+                }).show();
+            });
+
+            await expect(page.locator('.autocomplete-item strong')).toHaveText('Safe');
+            await expect(page.locator('[data-unsafe]')).toHaveCount(0);
+        });
+
+        test('appends DOM nodes without cloning', async ({ page }) => {
+            expect(await page.evaluate((_) => {
+                UI.Autocomplete.init($.findOne('#autocomplete'), {
+                    data: ['One'],
+                    minSearch: 0,
+                    renderResult(value) {
+                        const node = $.create('em', { text: value });
+                        window.renderedNode = node;
+                        return node;
+                    },
+                }).show();
+                return $.findOne('.autocomplete-item em') === window.renderedNode;
+            })).toBe(true);
+
+            await expect(page.locator('.autocomplete-item em')).toHaveText('One');
+        });
+
+        for (const { name, callbacks } of [
+            { name: 'renderResult', callbacks: ['renderResult'] },
+            { name: 'sanitize', callbacks: ['sanitize'] },
+            { name: 'both rendering callbacks', callbacks: ['renderResult', 'sanitize'] },
+        ]) {
+            test(`falls back safely when ${name} throws`, async ({ page }) => {
+                await page.evaluate((callbacks) => {
+                    const options = {
+                        data: ['One'],
+                        minSearch: 0,
+                        renderResult: (_) => '<strong>One</strong><script data-unsafe>Unsafe</script>',
+                    };
+                    for (const callback of callbacks) {
+                        options[callback] = () => {
+                            throw new Error(`${callback} failed`);
+                        };
+                    }
+                    UI.Autocomplete.init($.findOne('#autocomplete'), options).show();
+                }, callbacks);
+
+                await expect(page.locator('.autocomplete-item')).toHaveText('One');
+                await expect(page.locator('[data-unsafe]')).toHaveCount(0);
+            });
+        }
+
+        for (const returnsItem of [false, true]) {
+            test(`keeps an accessible empty item when renderResult returns ${returnsItem ? 'the item itself' : 'null'}`, async ({ page }) => {
+                await page.evaluate((returnsItem) => {
+                    UI.Autocomplete.init($.findOne('#autocomplete'), {
+                        data: ['One'],
+                        minSearch: 0,
+                        renderResult: (_, item) => returnsItem ? item : null,
+                    }).show();
+                }, returnsItem);
+
+                const item = page.locator('.autocomplete-item');
+                await expect(item).toHaveCount(1);
+                await expect(item).toBeEmpty();
+                await expect(item).toHaveAttribute('aria-label', 'One');
+            });
+        }
     });
 
     test.describe('customization', () => {

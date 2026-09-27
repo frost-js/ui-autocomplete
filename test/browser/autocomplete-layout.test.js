@@ -47,7 +47,7 @@ test.describe('Autocomplete layout', () => {
         }
     });
 
-    test.describe('sizing, appendTo, and Popper options', () => {
+    test.describe('sizing and overflow', () => {
         test('matches the exact input border-box with fullWidth', async ({ page }) => {
             await page.evaluate((_) => {
                 const input = $.findOne('#autocomplete');
@@ -85,6 +85,28 @@ test.describe('Autocomplete layout', () => {
             expect(widths.menu).toBeLessThan(widths.body);
         });
 
+        test('constrains long results and vertical overflow', async ({ page }) => {
+            await page.evaluate((_) => {
+                const results = Array.from({ length: 30 }, (_, index) =>
+                    `${index}: ${'Long autocomplete result '.repeat(20)}`,
+                );
+                UI.Autocomplete.init($.findOne('#autocomplete'), {
+                    data: results,
+                    maxHeight: '100px',
+                    minSearch: 0,
+                }).show();
+            });
+
+            const menu = page.locator('.autocomplete-menu');
+            const item = page.locator('.autocomplete-item').first();
+            await expect(menu).toHaveCSS('max-height', '100px');
+            await expect(item).toHaveCSS('text-overflow', 'ellipsis');
+            expect(await menu.evaluate((node) => node.scrollHeight > node.clientHeight)).toBe(true);
+            expect(await item.evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(true);
+        });
+    });
+
+    test.describe('attachment and positioning', () => {
         test('appends to a configured container', async ({ page }) => {
             await page.evaluate((_) => {
                 $.append(document.body, $.create('div', { attributes: { id: 'portal' } }));
@@ -133,9 +155,31 @@ test.describe('Autocomplete layout', () => {
             });
             expect(gap).toBe(7);
         });
+
+        test('aligns logical start in RTL', async ({ page }) => {
+            await page.evaluate((_) => {
+                $.setAttribute(document.documentElement, { dir: 'rtl' });
+                const input = $.findOne('#autocomplete');
+                $.setStyle(input, { inlineSize: '240px' });
+                UI.Autocomplete.init(input, {
+                    data: ['نتيجة'],
+                    minSearch: 0,
+                }).show();
+            });
+
+            const menu = page.locator('.autocomplete-menu');
+            await expect(menu).toHaveCSS('direction', 'rtl');
+            await expect(menu).toHaveCSS('text-align', 'start');
+            const edgeDifference = await page.evaluate((_) => {
+                const inputBox = $.findOne('#autocomplete').getBoundingClientRect();
+                const menuBox = $.findOne('.autocomplete-menu').getBoundingClientRect();
+                return Math.abs(inputBox.right - menuBox.right);
+            });
+            expect(edgeDifference).toBeLessThanOrEqual(1);
+        });
     });
 
-    test.describe('styles, direction, and layout', () => {
+    test.describe('appearance and motion', () => {
         test('uses dropdown-aligned visual styles and show state', async ({ page }) => {
             await page.evaluate((_) => {
                 UI.Autocomplete.init($.findOne('#autocomplete'), {
@@ -168,48 +212,6 @@ test.describe('Autocomplete layout', () => {
                 await expect(page.locator(`.autocomplete-menu-${size}`)).toHaveCSS('font-size', pixels);
             });
         }
-
-        test('constrains long results and vertical overflow', async ({ page }) => {
-            await page.evaluate((_) => {
-                const results = Array.from({ length: 30 }, (_, index) =>
-                    `${index}: ${'Long autocomplete result '.repeat(20)}`,
-                );
-                UI.Autocomplete.init($.findOne('#autocomplete'), {
-                    data: results,
-                    maxHeight: '100px',
-                    minSearch: 0,
-                }).show();
-            });
-
-            const menu = page.locator('.autocomplete-menu');
-            const item = page.locator('.autocomplete-item').first();
-            await expect(menu).toHaveCSS('max-height', '100px');
-            await expect(item).toHaveCSS('text-overflow', 'ellipsis');
-            expect(await menu.evaluate((node) => node.scrollHeight > node.clientHeight)).toBe(true);
-            expect(await item.evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(true);
-        });
-
-        test('aligns logical start in RTL', async ({ page }) => {
-            await page.evaluate((_) => {
-                $.setAttribute(document.documentElement, { dir: 'rtl' });
-                const input = $.findOne('#autocomplete');
-                $.setStyle(input, { inlineSize: '240px' });
-                UI.Autocomplete.init(input, {
-                    data: ['نتيجة'],
-                    minSearch: 0,
-                }).show();
-            });
-
-            const menu = page.locator('.autocomplete-menu');
-            await expect(menu).toHaveCSS('direction', 'rtl');
-            await expect(menu).toHaveCSS('text-align', 'start');
-            const edgeDifference = await page.evaluate((_) => {
-                const inputBox = $.findOne('#autocomplete').getBoundingClientRect();
-                const menuBox = $.findOne('.autocomplete-menu').getBoundingClientRect();
-                return Math.abs(inputBox.right - menuBox.right);
-            });
-            expect(edgeDifference).toBeLessThanOrEqual(1);
-        });
 
         for (const { reducedMotion, duration } of [
             { reducedMotion: 'reduce', duration: '0s' },
