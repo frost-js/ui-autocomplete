@@ -159,28 +159,19 @@ export default class Autocomplete extends BaseComponent {
         minContact: false,
     };
 
-    /** @type {HTMLLIElement[]} */
     #activeItems = [];
-    /** @type {string[]} */
     #data = [];
-    /** @type {HTMLLIElement|null} */
     #errorNode = null;
-    /** @type {Map<string, string|null>} */
     #inputAttributes = new Map;
     #inputEvent = null;
-    /** @type {HTMLLIElement|null} */
     #loaderNode = null;
     #loadResults = null;
-    /** @type {HTMLUListElement|null} */
     #menuNode = null;
-    /** @type {Popper|null} */
     #popper = null;
-    /** @type {AutocompletePendingRequest|null} */
     #request = null;
     #scrollEvent = null;
     #showMore = false;
     #term = '';
-    /** @type {{direction: 'in'|'out'}|null} */
     #transition = null;
 
     /**
