@@ -830,7 +830,7 @@ export default class Autocomplete extends BaseComponent {
         }
 
         if (typeof content === 'string') {
-            $.setHTML(item, this.#sanitize(content));
+            $.setHtml(item, this.#sanitize(content));
         } else if (
             ($._isNode(content) || $._isFragment(content)) &&
             !$.isSame(item, content)

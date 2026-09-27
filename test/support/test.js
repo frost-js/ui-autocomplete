@@ -1,31 +1,54 @@
 import process from 'node:process';
 import { test as base, expect } from '@playwright/test';
 import { addCoverageReport } from 'monocart-reporter';
+import { setupClock } from '../setup/browser.js';
 
-let test = base;
+const collectCoverage = process.env.FROST_UI_AUTOCOMPLETE_COVERAGE === 'true';
 
-if (process.env.FROST_UI_AUTOCOMPLETE_COVERAGE === 'true') {
-    test = base.extend({
-        coverage: [
-            async ({ page }, use, testInfo) => {
-                await page.coverage.startJSCoverage({
-                    resetOnNavigation: false,
-                });
+const test = base.extend({
+    mockClock: [false, { option: true }],
+    uiPage: [
+        async ({ page, mockClock }, use, testInfo) => {
+            if (collectCoverage) {
+                await page.coverage.startJSCoverage({ resetOnNavigation: false });
+            }
 
-                await use();
+            if (mockClock) {
+                await setupClock(page);
+            }
 
-                const coverage = await page.coverage.stopJSCoverage();
-
-                if (coverage.length) {
-                    await addCoverageReport(coverage, testInfo);
+            await page.goto('/', { waitUntil: 'domcontentloaded' });
+            await page.evaluate((_) => {
+                if (!window.fQuery || !window.UI?.Autocomplete ||
+                    typeof window.fQuery.QuerySet.prototype.autocomplete !== 'function') {
+                    throw new Error('Failed to initialize Autocomplete on the test page.');
                 }
-            },
-            {
-                auto: true,
-                scope: 'test',
-            },
-        ],
-    });
-}
+
+                document.body.replaceChildren();
+            });
+
+            await page.waitForFunction((_) => {
+                const node = document.createElement('div');
+                node.className = 'autocomplete-menu text-center';
+                document.body.append(node);
+
+                const style = getComputedStyle(node);
+                const ready = style.overflowY === 'auto' &&
+                    style.textAlign === 'center';
+
+                node.remove();
+                return ready;
+            });
+
+            await use();
+
+            if (collectCoverage) {
+                const coverage = await page.coverage.stopJSCoverage();
+                await addCoverageReport(coverage, testInfo);
+            }
+        },
+        { auto: true },
+    ],
+});
 
 export { expect, test };

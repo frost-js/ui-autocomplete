@@ -607,7 +607,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 				content = value;
 			}
 			if (!this.node) return null;
-			if (typeof content === "string") _fr0st_query.default.setHTML(item, this.#sanitize(content));
+			if (typeof content === "string") _fr0st_query.default.setHtml(item, this.#sanitize(content));
 			else if ((_fr0st_query.default._isNode(content) || _fr0st_query.default._isFragment(content)) && !_fr0st_query.default.isSame(item, content)) _fr0st_query.default.append(item, content);
 			return item;
 		}

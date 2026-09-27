@@ -575,7 +575,7 @@ var Autocomplete = class extends BaseComponent {
 			content = value;
 		}
 		if (!this.node) return null;
-		if (typeof content === "string") $.setHTML(item, this.#sanitize(content));
+		if (typeof content === "string") $.setHtml(item, this.#sanitize(content));
 		else if (($._isNode(content) || $._isFragment(content)) && !$.isSame(item, content)) $.append(item, content);
 		return item;
 	}
