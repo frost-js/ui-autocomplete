@@ -21,45 +21,56 @@ An accessible autocomplete component for [Frost UI](https://github.com/frost-js/
 
 ## Installation
 
-Install Autocomplete and its peer dependencies with npm.
+### Browser projects / bundlers
+
+Install Autocomplete with its Frost UI v4 and fQuery v5 peers:
 
 ```bash
-npm install @fr0st/ui-autocomplete @fr0st/query @fr0st/ui
+npm i @fr0st/ui-autocomplete @fr0st/ui @fr0st/query
 ```
 
-### Bundler
-
-Import the component and its CSS. Importing the module registers the native `Autocomplete.init` API and the fQuery `autocomplete` plugin.
+The package root resolves to the compiled ESM bundle. Import the Frost UI and Autocomplete stylesheets and the default component export:
 
 ```js
-import '@fr0st/ui/dist/frost-ui.css';
-import '@fr0st/ui-autocomplete/dist/frost-ui-autocomplete.css';
+import '@fr0st/ui/dist/frost-ui.min.css';
+import '@fr0st/ui-autocomplete/dist/frost-ui-autocomplete.min.css';
 import Autocomplete from '@fr0st/ui-autocomplete';
 
-Autocomplete.init(document.querySelector('#city'), {
-    data: ['Brisbane', 'Melbourne', 'Perth', 'Sydney'],
-});
+const autocomplete = Autocomplete.init(
+    document.querySelector('#city'),
+    {
+        data: ['Brisbane', 'Melbourne', 'Perth', 'Sydney'],
+    },
+);
 ```
 
-### Browser ESM
+Importing the module registers Autocomplete with Frost UI and adds the fQuery `autocomplete` plugin. `@fr0st/ui` and `@fr0st/query` are peer dependencies so the component shares the application's UI and fQuery instances. The package root, `dist/*`, and `src/*` are available through package exports.
 
-The ESM build keeps `@fr0st/query` and `@fr0st/ui` external. Use an import map, or map those specifiers with your preferred CDN.
+Autocomplete requires a browser DOM or a compatible DOM environment configured through fQuery. Server-rendered applications should load the component on the client.
+
+### Browser (ESM)
+
+The ESM bundle imports `@fr0st/ui` and `@fr0st/query`, and fQuery imports `@fr0st/core`. Map all three dependencies when loading the bundle directly in a browser:
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fr0st/ui@4/dist/frost-ui.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fr0st/ui-autocomplete@4/dist/frost-ui-autocomplete.min.css">
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/@fr0st/ui@latest/dist/frost-ui.min.css">
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/@fr0st/ui-autocomplete@latest/dist/frost-ui-autocomplete.min.css">
 
 <script type="importmap">
 {
     "imports": {
-        "@fr0st/core": "https://cdn.jsdelivr.net/npm/@fr0st/core@4/dist/frost-core.esm.min.js",
-        "@fr0st/query": "https://cdn.jsdelivr.net/npm/@fr0st/query@5/dist/fquery.esm.min.js",
-        "@fr0st/ui": "https://cdn.jsdelivr.net/npm/@fr0st/ui@4/dist/frost-ui.esm.min.js"
+        "@fr0st/core": "https://cdn.jsdelivr.net/npm/@fr0st/core@latest/dist/frost-core.esm.min.js",
+        "@fr0st/query": "https://cdn.jsdelivr.net/npm/@fr0st/query@latest/dist/fquery.esm.min.js",
+        "@fr0st/ui": "https://cdn.jsdelivr.net/npm/@fr0st/ui@latest/dist/frost-ui.esm.min.js"
     }
 }
 </script>
 <script type="module">
-    import Autocomplete from 'https://cdn.jsdelivr.net/npm/@fr0st/ui-autocomplete@4/dist/frost-ui-autocomplete.esm.min.js';
+    import Autocomplete from 'https://cdn.jsdelivr.net/npm/@fr0st/ui-autocomplete@latest/dist/frost-ui-autocomplete.esm.min.js';
 
     Autocomplete.init(document.querySelector('#city'), {
         data: ['Brisbane', 'Melbourne', 'Perth', 'Sydney'],
@@ -67,24 +78,35 @@ The ESM build keeps `@fr0st/query` and `@fr0st/ui` external. Use an import map, 
 </script>
 ```
 
-### UMD
+### Browser (UMD)
 
-Load Frost UI's all-in-one bundle before Autocomplete. It supplies the `UI` and `fQuery` globals expected by the component, and the Autocomplete UMD build extends the existing `globalThis.UI` object.
+Load Frost UI's all-in-one bundle before Autocomplete. The UI bundle supplies both the `UI` and `fQuery` globals expected by the component:
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fr0st/ui@4/dist/frost-ui.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fr0st/ui-autocomplete@4/dist/frost-ui-autocomplete.min.css">
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/@fr0st/ui@latest/dist/frost-ui.min.css">
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/@fr0st/ui-autocomplete@latest/dist/frost-ui-autocomplete.min.css">
 
-<script src="https://cdn.jsdelivr.net/npm/@fr0st/ui@4/dist/frost-ui-bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@fr0st/ui-autocomplete@4/dist/frost-ui-autocomplete.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fr0st/ui@latest/dist/frost-ui-bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fr0st/ui-autocomplete@latest/dist/frost-ui-autocomplete.min.js"></script>
 <script>
-    UI.Autocomplete.init(document.querySelector('#city'), {
-        data: ['Brisbane', 'Melbourne', 'Perth', 'Sydney'],
-    });
+    const autocomplete = UI.Autocomplete.init(
+        document.querySelector('#city'),
+        {
+            data: ['Brisbane', 'Melbourne', 'Perth', 'Sydney'],
+        },
+    );
 </script>
 ```
 
-Autocomplete does not inject styles. Always load Frost UI CSS first, followed by the Autocomplete CSS. Use the expanded `.css` files during development and the `.min.css` files in production.
+The UMD bundle adds `Autocomplete` to the existing `globalThis.UI` object. It expects `globalThis.UI` and `globalThis.fQuery` to exist before it loads. If the non-bundled Frost UI build is used instead, load fQuery, Frost UI, and Autocomplete in that order.
+
+Do not load the separate fQuery script when using `frost-ui-bundle.js` or `frost-ui-bundle.min.js`.
+
+Autocomplete does not inject styles. Always load Frost UI CSS first, followed by the Autocomplete CSS. Expanded `.css` files are also available for development.
 
 ## Usage
 
@@ -132,7 +154,7 @@ Autocomplete.init(document.querySelector('#repository'), {
 
 ## Options
 
-Pass options to `Autocomplete.init`, `$.autocomplete`, or Frost UI's `data-ui-*` attributes. JavaScript callbacks must be passed as JavaScript options.
+Pass options to `Autocomplete.init`, `$(...).autocomplete(...)`, or Frost UI's `data-ui-*` attributes. JavaScript callbacks must be passed as JavaScript options.
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -140,20 +162,20 @@ Pass options to `Autocomplete.init`, `$.autocomplete`, or Frost UI's `data-ui-*`
 | `data` | `string[]` | `[]` | Local result values. Ignored when `getResults` is set. |
 | `getResults` | `function \| null` | `null` | Synchronous or asynchronous result provider. |
 | `renderResult` | `function` | `(value) => value` | Renders a result as a sanitized string or trusted DOM node. |
-| `sanitize` | `function` | fQuery sanitizer | Sanitizes strings returned by `renderResult`. |
-| `isMatch` | `function` | accent-insensitive contains | Determines whether a local value matches the term. |
+| `sanitize` | `function` | fQuery sanitizer | Sanitizes string results and loading/error messages. |
+| `isMatch` | `function` | case- and accent-insensitive contains | Determines whether a local value matches the term. |
 | `sortResults` | `function` | match position, then locale | Compares two matching local values. |
 | `minSearch` | `number` | `1` | Minimum input length before loading results. Use `0` for an empty query. |
-| `debounce` | `number` | `250` | Delay in milliseconds before loading results. |
+| `debounce` | `number` | `250` | Delay in milliseconds before invoking `getResults`, including pagination requests. Does not delay local filtering. |
 | `duration` | `number` | `100` | Show and hide transition duration in milliseconds. |
 | `maxHeight` | `string` | `'250px'` | Maximum menu height. |
-| `appendTo` | `Element \| string \| null` | `null` | Menu container. Defaults to the input's parent. |
+| `appendTo` | `Element \| string \| null` | `null` | Menu container or selector. By default, the menu is inserted immediately after the input. Invalid or disconnected targets fall back to that placement. |
 | `fullWidth` | `boolean` | `false` | Match the input's exact border-box width when enabled; otherwise size to content. |
-| `placement` | `'top' \| 'bottom'` | `'bottom'` | Preferred vertical Popper placement. |
-| `position` | `'start' \| 'end'` | `'start'` | Logical horizontal Popper alignment. |
-| `fixed` | `boolean` | `false` | Preserve the preferred placement instead of allowing Popper to flip it. |
+| `placement` | `'auto' \| 'top' \| 'bottom' \| 'start' \| 'end'` | `'bottom'` | Preferred Popper placement; `start` and `end` follow the input's text direction. |
+| `position` | `'start' \| 'center' \| 'end'` | `'start'` | Alignment along the placement edge. |
+| `fixed` | `boolean` | `false` | Preserve the preferred placement instead of allowing Popper to flip it. `placement: 'auto'` still chooses a placement. |
 | `spacing` | `number` | `0` | Space in pixels between the input and menu. |
-| `minContact` | `number \| false` | `false` | Minimum contact in pixels between the menu and input, or `false` for Popper's default. |
+| `minContact` | `number \| false` | `false` | Minimum overlap in pixels along the alignment axis when Popper shifts the menu to fit; `false` allows zero overlap. |
 
 An existing instance is reused when the same input is initialized again. Resolved options are frozen; dispose and reinitialize the input to use a different configuration.
 
@@ -195,19 +217,21 @@ Return an object, or a promise for one, with a `results` string array and option
 }
 ```
 
-When `showMore` is true, scrolling near the end of the menu requests the next page. The next request receives the number of loaded items as `offset`. An empty page or `showMore: false` ends pagination.
+When `showMore` is true, scrolling near the end of the menu requests the next page. If the results do not fill the menu enough to scroll, additional pages load automatically until it becomes scrollable or pagination ends. The next request receives the number of loaded items as `offset`. An empty page or `showMore: false` ends pagination.
 
-Each new search aborts the previous request and cancels pending debounce work. Hiding or disposing also aborts active work. Providers should pass `signal` to `fetch` and stop expensive work when it is aborted. Request tokens ensure a stale completion is ignored even if the provider does not honor cancellation. Changing the term during pagination starts at offset `0` and prevents the old page from being appended.
+Each new search aborts the previous request and cancels pending provider debounce work. Hiding or disposing also aborts active work. Calling `hide()` cancels queued input and scroll callbacks; preventing `hide.ui.autocomplete` keeps the menu open and the active request running. Providers should pass `signal` to `fetch` and stop expensive work when it is aborted. Request tokens ensure a stale completion is ignored even if the provider does not honor cancellation. Changing the term during pagination starts at offset `0` and prevents the old page from being appended.
 
-A thrown exception, rejected promise, or malformed response displays `lang.error`. An empty first page closes the menu. Completions after disposal are ignored.
+A thrown exception, rejected promise, or malformed response from the current provider request displays `lang.error`. An empty first page removes the loader and closes the menu unless `hide.ui.autocomplete` is prevented. Completions after disposal are ignored. Disposing from an abort listener stops further component work.
 
 ## Rendering and sanitization
 
 `renderResult(value, item)` runs with the Autocomplete instance as `this`.
 
 - A string is passed through `sanitize` before insertion as HTML.
-- A DOM node is appended directly and is not sanitized or cloned. Return DOM only when the node and all its content are trusted.
-- `null` and `undefined` render an empty item.
+- A DOM node or document fragment is appended directly and is not sanitized or cloned. Return DOM only when the node and all its content are trusted.
+- `null` and `undefined` leave the item as configured by the callback; it stays empty unless the callback added content.
+- If the callback throws, the original result value is rendered through `sanitize`.
+- Disposing the component inside the callback stops rendering.
 
 The default sanitizer is fQuery's HTML sanitizer. If a custom sanitizer throws, Autocomplete falls back to that default. Never use an identity sanitizer with untrusted API or user content.
 
@@ -226,15 +250,15 @@ Autocomplete.init(document.querySelector('#framework'), {
 });
 ```
 
-Custom `isMatch(value, term)` and `sortResults(a, b, term)` callbacks also run with the component instance as `this`. Callback failures are contained so one bad value does not leave the component broken.
+Custom `isMatch(value, term)` and `sortResults(a, b, term)` callbacks also run with the component instance as `this`. If `isMatch` throws, that value is excluded. If `sortResults` throws, that comparison falls back to `localeCompare`.
 
 ## Methods
 
 | Method | Returns | Description |
 | --- | --- | --- |
 | `Autocomplete.init(node, options?)` | `Autocomplete` | Return the existing instance for an input or create one. |
-| `show()` | `void` | Load and show results for the current value. Has no effect while disabled or read-only. |
-| `hide()` | `void` | Hide the menu and cancel pending debounce, requests, and pagination. |
+| `show()` | `void` | Load and show results for the current value. Has no effect while already open, disabled, or read-only. |
+| `hide()` | `void` | Cancel queued input/scroll callbacks and hide the menu. Unless hiding is prevented, also cancel pending provider debounce and active requests. |
 | `toggle()` | `void` | Show a hidden menu or hide a visible menu. |
 | `update()` | `void` | Refresh the current Popper position and dimensions. |
 | `dispose()` | `void` | Remove the menu and listeners, cancel work, and restore the input's original role and ARIA attributes. |
@@ -266,7 +290,7 @@ The instance exposes the enhanced input as `instance.node` and its frozen resolv
 
 Events are dispatched on the input and bubble through the DOM.
 
-| Event | Cancelable | Description |
+| Event | Can cancel action | Description |
 | --- | --- | --- |
 | `show.ui.autocomplete` | Yes | Fired before the menu begins opening. |
 | `shown.ui.autocomplete` | No | Fired after the opening transition completes. |
@@ -274,13 +298,15 @@ Events are dispatched on the input and bubble through the DOM.
 | `hidden.ui.autocomplete` | No | Fired after the closing transition completes. |
 | `change.ui.autocomplete` | No | Fired after a different result is selected and written to the input. |
 
-Calling `preventDefault()` during `show.ui.autocomplete` or `hide.ui.autocomplete` cancels that action. Rapid opposing transitions are token-protected, so an earlier transition cannot emit a stale completion event.
+Calling `preventDefault()` during `show.ui.autocomplete` or `hide.ui.autocomplete` cancels that action. Preventing `shown`, `hidden`, or `change` has no effect on the completed action. Rapid opposing transitions are token-protected, so an earlier transition cannot emit a stale completion event.
 
 ```js
 $.addEvent('#fruit', 'change.ui.autocomplete', (event) => {
     console.log('Selected:', event.target.value);
 });
 ```
+
+Use fQuery's event API for namespaced event names. Native `addEventListener` uses the base event name, such as `change`, with `event.namespace === 'ui.autocomplete'` identifying component events.
 
 ## CSS classes
 
@@ -350,61 +376,42 @@ Autocomplete follows the editable combobox/listbox interaction model. Focus rema
 | --- | --- |
 | `ArrowDown` | Open at the first result, or move to the next result. |
 | `ArrowUp` | Open at the last result, or move to the previous result. |
-| `Enter` | Select the focused result without submitting the containing form. |
+| `Enter` | Select the focused result while the menu is open, preventing form submission. Otherwise retain normal Enter behavior. |
 | `Escape` | Close the menu and clear the active descendant. |
-| Typing | Debounce and load results once `minSearch` is met. |
+| Typing | Filter local data or debounce the provider request once `minSearch` is met. |
 | Pointer hover | Focus the result without moving DOM focus from the input. |
 | Primary click | Select the result. |
 | Blur | Close the menu. |
 
-The component applies `role="combobox"`, `aria-autocomplete="list"`, `aria-controls`, `aria-expanded`, and `aria-haspopup="listbox"` to the input. The menu uses `role="listbox"`; selectable rows use `role="option"`, stable generated IDs, and `aria-selected`. Loading and error rows are disabled live status content, and the input exposes its busy state during asynchronous work.
+Keyboard navigation scrolls the focused result into view, including when opening with `ArrowUp`. Keydown events marked as composing are ignored, so confirming IME input does not select a result.
+
+The component applies `role="combobox"`, `aria-autocomplete="list"`, `aria-controls`, `aria-expanded`, and `aria-haspopup="listbox"` to the input. The menu uses `role="listbox"`; selectable rows use `role="option"`, generated IDs, and `aria-selected`. Loading and error rows are disabled live status content, and the menu exposes `aria-busy` during asynchronous work.
 
 Disabled and read-only inputs do not open. `dispose()` restores every pre-existing role and managed ARIA attribute exactly, including attributes present with an empty value.
 
 ## Layout and themes
 
-`fullWidth: true` measures the input's border box exactly. With `fullWidth: false`, the menu uses content sizing while remaining constrained to the viewport. Long results wrap safely, the menu scrolls at `maxHeight`, and logical properties keep start/end alignment correct in RTL layouts.
+`fullWidth: true` measures the input's border box exactly. With `fullWidth: false`, the menu uses content sizing while remaining constrained to the viewport. Long result text stays on one line and is truncated with an ellipsis when needed; loading and error messages can wrap. The menu scrolls at `maxHeight`, and logical properties keep start/end alignment correct in RTL layouts.
 
-The stylesheet consumes Frost UI color tokens, so it follows Frost UI's light, dark, and system themes without component-specific theme configuration. Reduced-motion preferences disable the menu animation, and forced-colors mode preserves a visible border and focused option.
-
-## Migrating from v3 to v4
-
-Version 4 is a major package, build, and component internals update.
-
-- Upgrade peers to `@fr0st/query ^5.0.0` and `@fr0st/ui ^4.0.0`.
-- The package root now resolves to compiled ESM. Browser globals continue through UMD as `UI.Autocomplete`.
-- Load the new v4 component CSS after Frost UI v4 CSS.
-- The non-functional `menuSize` option was removed. Use `maxHeight`, `fullWidth`, and input size classes.
-- `getResults` now receives `{ offset, signal, term? }`. Honor the signal and return `{ results, showMore? }`.
-- String renderer output remains sanitized; DOM nodes are an explicitly trusted rendering path.
-- Public methods remain `show`, `hide`, `toggle`, `update`, and `dispose`. Do not use removed prototype modules or underscored internals.
-- Resolved options are immutable. Dispose and reinitialize an input to apply a different configuration.
-- Disposal restores the input's original role and ARIA state, and pending work cannot complete after disposal.
-- Sass now uses modules (`@use`) and logical properties.
-- `fullWidth: true` means the input's exact border-box width; `false` permits content sizing.
-- The toolchain requires Node `^20.19.0 || ^22.13.0 || >=24`.
+The stylesheet consumes Frost UI color tokens, so it follows Frost UI's light, dark, and system themes without component-specific theme configuration. Reduced-motion handling is entirely in CSS. The `duration` option sets `--ui-autocomplete-transition-duration` inline, but the stylesheet only enables transitions when the user has no reduced-motion preference. Forced-colors mode preserves a visible border and focused option.
 
 ## Development
 
+Use Node.js matching `^20.19.0 || ^22.13.0 || >=24`. Install dependencies with `npm ci`, then install Playwright browsers with `npx playwright install --with-deps`.
+
 ```bash
-npm install
+npm test
 npm run lint
 npm run build
-npm test
-npm run test:coverage
 ```
 
-| Command | Purpose |
-| --- | --- |
-| `npm run build:js` | Build ESM and UMD JavaScript with Vite. |
-| `npm run build:css` | Compile expanded and minified CSS with source maps. |
-| `npm run lint:js` | Lint JavaScript. |
-| `npm run lint:css` | Lint compiled CSS. |
-| `npm run lint:sass` | Lint Sass source. |
-| `npm run lint:unused` | Find unused dependencies and files. |
-| `npm run test:browser` | Run the Playwright browser matrix. |
-| `npm run test:headed` | Run Playwright in headed mode. |
-| `npm run test:ui` | Open Playwright's test UI. |
+`npm test` rebuilds JavaScript and CSS, then runs the Playwright suite in Chromium, Firefox, and WebKit. `npm run test:browser` runs the suite against the existing bundles, so rebuild after changing source files.
+
+After building, `npm run test:coverage` runs Chromium tests and writes coverage reports to `coverage/`.
+
+`npm run test:headed` and `npm run test:ui` also use the existing bundles and open headed browsers or the Playwright UI.
+
+`npm run lint:sass:unused` checks for unused Sass variables.
 
 Open `demo/index.html` through a local HTTP server to explore the complete example gallery.
 
