@@ -555,17 +555,22 @@ test.describe('Autocomplete', () => {
             await expect(page.locator('.autocomplete-menu')).toHaveCount(0);
         });
 
-        test('ignores queued input work after focus moves away', async ({ page }) => {
-            await page.evaluate((_) => {
-                const input = $.findOne('#autocomplete');
-                input.focus();
-                $.setValue(input, 'o');
-                input.dispatchEvent(new Event('input', { bubbles: true }));
-                $.focus('#outside');
-            });
+        test.describe('queued input', () => {
+            test.use({ mockClock: true });
 
-            await expect(page.locator('#outside')).toBeFocused();
-            await expect(page.locator('.autocomplete-menu')).toHaveCount(0);
+            test('ignores queued input work after focus moves away', async ({ page }) => {
+                await page.evaluate((_) => {
+                    const input = $.findOne('#autocomplete');
+                    input.focus();
+                    $.setValue(input, 'o');
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    $.focus('#outside');
+                });
+                await page.clock.runFor(1);
+
+                await expect(page.locator('#outside')).toBeFocused();
+                await expect(page.locator('.autocomplete-menu')).toHaveCount(0);
+            });
         });
 
         test('ignores unrelated keys without changing the open menu', async ({ page }) => {
@@ -713,44 +718,47 @@ test.describe('Autocomplete', () => {
             await expect(page.locator('.autocomplete-item em')).toHaveText('One');
         });
 
-        test('falls back safely when rendering or sanitizing throws', async ({ page }) => {
-            await page.evaluate((_) => {
-                UI.Autocomplete.init($.findOne('#autocomplete'), {
-                    data: ['One'],
-                    minSearch: 0,
-                    renderResult() {
-                        throw new Error('Render failed');
-                    },
-                    sanitize() {
-                        throw new Error('Sanitize failed');
-                    },
-                }).show();
+        for (const { name, callbacks } of [
+            { name: 'renderResult', callbacks: ['renderResult'] },
+            { name: 'sanitize', callbacks: ['sanitize'] },
+            { name: 'both rendering callbacks', callbacks: ['renderResult', 'sanitize'] },
+        ]) {
+            test(`falls back safely when ${name} throws`, async ({ page }) => {
+                await page.evaluate((callbacks) => {
+                    const options = {
+                        data: ['One'],
+                        minSearch: 0,
+                        renderResult: (_) => '<strong>One</strong><script data-unsafe>Unsafe</script>',
+                    };
+                    for (const callback of callbacks) {
+                        options[callback] = () => {
+                            throw new Error(`${callback} failed`);
+                        };
+                    }
+                    UI.Autocomplete.init($.findOne('#autocomplete'), options).show();
+                }, callbacks);
+
+                await expect(page.locator('.autocomplete-item')).toHaveText('One');
+                await expect(page.locator('[data-unsafe]')).toHaveCount(0);
             });
+        }
 
-            await expect(page.locator('.autocomplete-item')).toHaveText('One');
-        });
+        for (const returnsItem of [false, true]) {
+            test(`keeps an accessible empty item when renderResult returns ${returnsItem ? 'the item itself' : 'null'}`, async ({ page }) => {
+                await page.evaluate((returnsItem) => {
+                    UI.Autocomplete.init($.findOne('#autocomplete'), {
+                        data: ['One'],
+                        minSearch: 0,
+                        renderResult: (_, item) => returnsItem ? item : null,
+                    }).show();
+                }, returnsItem);
 
-        test('supports empty rendering and ignores returning the item itself', async ({ page }) => {
-            await page.evaluate((_) => {
-                UI.Autocomplete.init($.findOne('#autocomplete'), {
-                    data: ['Empty'],
-                    minSearch: 0,
-                    renderResult: (_) => null,
-                }).show();
-                UI.Autocomplete.init($.findOne('#autocomplete2'), {
-                    data: ['Self'],
-                    minSearch: 0,
-                    renderResult: (_, item) => item,
-                }).show();
+                const item = page.locator('.autocomplete-item');
+                await expect(item).toHaveCount(1);
+                await expect(item).toBeEmpty();
+                await expect(item).toHaveAttribute('aria-label', 'One');
             });
-
-            const items = page.locator('.autocomplete-item');
-            await expect(items).toHaveCount(2);
-            await expect(items.first()).toBeEmpty();
-            await expect(items.nth(1)).toBeEmpty();
-            await expect(items.first()).toHaveAttribute('aria-label', 'Empty');
-            await expect(items.nth(1)).toHaveAttribute('aria-label', 'Self');
-        });
+        }
     });
 
     test.describe('matching and sorting', () => {
@@ -794,7 +802,7 @@ test.describe('Autocomplete', () => {
             await expect(page.locator('.autocomplete-item')).toHaveText(['Two', 'One']);
         });
 
-        test('handles matching and sorting exceptions', async ({ page }) => {
+        test('excludes results when isMatch throws', async ({ page }) => {
             await page.evaluate((_) => {
                 UI.Autocomplete.init($.findOne('#autocomplete'), {
                     data: ['One'],
@@ -803,7 +811,15 @@ test.describe('Autocomplete', () => {
                     },
                     minSearch: 0,
                 }).show();
-                UI.Autocomplete.init($.findOne('#autocomplete2'), {
+            });
+
+            await expect(page.locator('.autocomplete-menu')).toHaveCount(0);
+            await expect(page.locator('#autocomplete')).toHaveAttribute('aria-expanded', 'false');
+        });
+
+        test('uses default sorting when sortResults throws', async ({ page }) => {
+            await page.evaluate((_) => {
+                UI.Autocomplete.init($.findOne('#autocomplete'), {
                     data: ['Two', 'One'],
                     isMatch: (_) => true,
                     minSearch: 0,

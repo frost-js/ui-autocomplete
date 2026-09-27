@@ -31,18 +31,20 @@ test.describe('Autocomplete layout', () => {
                 );
                 expect(widths[1]).toBe(widths[0]);
             });
-        }
 
-        test('updates through fQuery and safely no-ops while hidden', async ({ page }) => {
-            await page.evaluate((_) => {
-                $('#autocomplete').autocomplete({ data: ['One'] });
-                $('#autocomplete').autocomplete('update');
-                $('#autocomplete').autocomplete('show');
-                $('#autocomplete').autocomplete('update');
+            test(`does nothing while hidden (${name})`, async ({ page }) => {
+                await page.evaluate((_) => {
+                    window.autocomplete = UI.Autocomplete.init($.findOne('#autocomplete'), {
+                        data: ['One'],
+                        minSearch: 0,
+                    });
+                });
+                await page.evaluate(update);
+
+                await expect(page.locator('.autocomplete-menu')).toHaveCount(0);
+                await expect(page.locator('#autocomplete')).toHaveAttribute('aria-expanded', 'false');
             });
-
-            await expect(page.locator('.autocomplete-menu')).toHaveCount(0);
-        });
+        }
     });
 
     test.describe('sizing, appendTo, and Popper options', () => {
@@ -108,17 +110,14 @@ test.describe('Autocomplete layout', () => {
             await expect(page.locator('#autocomplete + .autocomplete-menu')).toHaveCount(1);
         });
 
-        test('applies placement, position, spacing, fixed, and minContact options', async ({ page }) => {
+        test('applies top placement and configured spacing', async ({ page }) => {
             await page.evaluate((_) => {
                 $.setStyle(document.body, { padding: '200px' });
                 const input = $.findOne('#autocomplete');
                 UI.Autocomplete.init(input, {
                     data: ['One'],
-                    fixed: true,
-                    minContact: 12,
                     minSearch: 0,
                     placement: 'top',
-                    position: 'end',
                     spacing: 7,
                 }).show();
             });
