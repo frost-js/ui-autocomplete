@@ -4,14 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Frost UI Autocomplete Demo</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fr0st/ui@4/dist/frost-ui.min.css">
     <link rel="stylesheet" href="../dist/frost-ui-autocomplete.css">
     <link rel="stylesheet" href="assets/demo.css">
-    <script src="https://cdn.jsdelivr.net/npm/@fr0st/ui@4/dist/frost-ui-bundle.min.js"></script>
-    <script src="../dist/frost-ui-autocomplete.js"></script>
-    <script src="assets/demo.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@fr0st/ui@4/dist/frost-ui-bundle.min.js" defer></script>
+    <script src="../dist/frost-ui-autocomplete.js" defer></script>
+    <script src="assets/demo.js" defer></script>
 </head>
 
 <body>
@@ -37,7 +36,7 @@
             <div class="row g-0 align-items-stretch">
                 <div class="col-lg-7 d-flex align-items-center bg-ambient demo-hero-copy">
                     <div class="p-4 p-md-5">
-                        <span class="badge bg-primary-subtle text-primary-subtle mb-3">Frost UI v3 component</span>
+                        <span class="badge bg-primary-subtle text-primary-subtle mb-3">Frost UI component</span>
                         <h1 class="display-2 mb-4">Find the right result, <span class="text-gradient">without the friction.</span></h1>
                         <p class="lead text-body-secondary mb-4">Explore local matching, cancellable remote searches, infinite pagination, custom rendering, keyboard navigation, and flexible placement.</p>
                         <nav class="d-flex flex-wrap gap-2" aria-label="Demo sections">
@@ -189,9 +188,9 @@
                     <div class="card h-100">
                         <div class="card-header d-flex align-items-center justify-content-between gap-2">
                             <strong>Event log</strong>
-                            <button class="btn btn-sm btn-secondary ripple" id="clear-events" type="button">Clear</button>
+                            <button class="btn btn-outline-secondary btn-sm ripple" id="clear-log" type="button">Clear log</button>
                         </div>
-                        <div class="card-body demo-event-log overflow-y-auto" id="event-log" role="log" aria-live="polite">
+                        <div class="card-body demo-event-log" id="event-log" role="log" aria-label="Autocomplete events" aria-live="polite" aria-relevant="additions">
                             <p class="small text-body-secondary mb-0">Use the input to log lifecycle and change events.</p>
                         </div>
                     </div>
@@ -262,10 +261,10 @@
         </section>
     </main>
 
-    <footer class="border-top bg-body-tertiary">
+    <footer class="border-top bg-glass">
         <div class="container py-4 d-flex flex-wrap justify-content-between gap-2">
-            <span class="text-body-secondary">Frost UI Autocomplete v4</span>
-            <a href="https://github.com/frost-js/ui-autocomplete">View source on GitHub</a>
+            <span class="text-body-secondary">Frost UI Autocomplete</span>
+            <a href="https://github.com/frost-js/ui-autocomplete">View the repository</a>
         </div>
     </footer>
 </body>

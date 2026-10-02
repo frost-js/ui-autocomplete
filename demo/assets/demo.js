@@ -1,134 +1,6 @@
-const $ = globalThis.$;
+const $ = globalThis.fQuery;
 const { Autocomplete } = globalThis.UI;
-
-const cityData = [
-    'Adelaide',
-    'Alice Springs',
-    'Brisbane',
-    'Cairns',
-    'Canberra',
-    'Darwin',
-    'Geelong',
-    'Gold Coast',
-    'Hobart',
-    'Melbourne',
-    'Newcastle',
-    'Perth',
-    'Sydney',
-    'Townsville',
-    'Wollongong',
-];
-
-const languageData = [
-    'C',
-    'C#',
-    'C++',
-    'Go',
-    'Java',
-    'JavaScript',
-    'Kotlin',
-    'PHP',
-    'Python',
-    'Ruby',
-    'Rust',
-    'Swift',
-    'TypeScript',
-];
-
-const peopleData = [
-    'Aisha Rahman',
-    'Amelia Hart',
-    'Carlos Mendoza',
-    'Chloé Martin',
-    'Dev Patel',
-    'Elena Rossi',
-    'Hana Suzuki',
-    'Ibrahim Haddad',
-    'Léa Dubois',
-    'Lucas Silva',
-    'Maya Thompson',
-    'Noah Williams',
-    'Priya Kapoor',
-    'Sofia García',
-];
-
-const frameworkData = [
-    { name: 'Frost UI', type: 'UI library' },
-    { name: 'Frost Query', type: 'DOM utilities' },
-    { name: 'React', type: 'UI library' },
-    { name: 'Svelte', type: 'Compiler' },
-    { name: 'Vue', type: 'UI framework' },
-];
-
-const sizeData = [
-    'A short result',
-    'A medium-length result',
-    'A deliberately long result that demonstrates predictable wrapping and overflow inside the available viewport',
-];
-
-const colorData = [
-    'Amber',
-    'Blue',
-    'Crimson',
-    'Emerald',
-    'Indigo',
-    'Orange',
-    'Rose',
-    'Violet',
-];
-
-const teammateData = [
-    'Aisha Rahman',
-    'Carlos Mendoza',
-    'Chloé Martin',
-    'Dev Patel',
-    'Elena Rossi',
-    'Hana Suzuki',
-    'Ibrahim Haddad',
-];
-
-const rtlData = [
-    'أبو ظبي',
-    'الإسكندرية',
-    'الدوحة',
-    'دبي',
-    'عمّان',
-    'مسقط',
-];
-
-const destinationData = Array.from(
-    { length: 48 },
-    (_, index) => `Destination ${String(index + 1).padStart(2, '0')}`,
-);
-
-const normalize = (value) =>
-    value
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase();
-
-const filterResults = (values, term = '') => {
-    const normalizedTerm = normalize(term);
-
-    return values.filter((value) => normalize(value).includes(normalizedTerm));
-};
-
-const waitForNetwork = (duration, signal) => new Promise((resolve, reject) => {
-    const onAbort = () => {
-        globalThis.clearTimeout(timeout);
-        reject(signal.reason || new DOMException('The request was aborted.', 'AbortError'));
-    };
-    const timeout = globalThis.setTimeout(() => {
-        signal.removeEventListener('abort', onAbort);
-        resolve();
-    }, duration);
-
-    if (signal.aborted) {
-        onAbort();
-    } else {
-        signal.addEventListener('abort', onAbort, { once: true });
-    }
-});
+const themeKey = 'frostui-autocomplete-demo-theme';
 
 const setTheme = (theme) => {
     if (theme === 'system') {
@@ -140,10 +12,183 @@ const setTheme = (theme) => {
     $('[data-demo-theme]').setValue(theme);
 };
 
-const storedTheme = localStorage.getItem('frostui-autocomplete-demo-theme');
-setTheme(['light', 'dark'].includes(storedTheme) ? storedTheme : 'system');
+const logEvent = (message, className = 'text-body-secondary') => {
+    const log = $.findOne('#event-log');
+    const entry = $.create('div', {
+        class: ['small', 'font-monospace', 'py-2', 'border-bottom', className],
+        text: message,
+    });
+
+    $.append(log, entry);
+
+    while ($.children(log).length > 50) {
+        $.remove($.child(log)[0]);
+    }
+
+    $.setScrollY(log, $.height(log, { boxSize: $.SCROLL_BOX }));
+};
 
 $.ready(() => {
+    let storedTheme;
+
+    try {
+        storedTheme = localStorage.getItem(themeKey);
+    } catch {
+        // The demo remains usable when browser storage is unavailable.
+    }
+
+    const requestedTheme = new URLSearchParams(location.search).get('theme');
+    const initialTheme = requestedTheme || storedTheme;
+    setTheme(['light', 'dark'].includes(initialTheme) ? initialTheme : 'system');
+
+    $('[data-demo-theme]').addEvent('change', (event) => {
+        const theme = $.getValue(event.currentTarget);
+        setTheme(theme);
+
+        try {
+            if (theme === 'system') {
+                localStorage.removeItem(themeKey);
+            } else {
+                localStorage.setItem(themeKey, theme);
+            }
+        } catch {
+            // Theme selection still applies for the current page.
+        }
+    });
+
+    $('#clear-log').addEvent('click', () => {
+        $('#event-log').empty();
+    });
+
+    const cityData = [
+        'Adelaide',
+        'Alice Springs',
+        'Brisbane',
+        'Cairns',
+        'Canberra',
+        'Darwin',
+        'Geelong',
+        'Gold Coast',
+        'Hobart',
+        'Melbourne',
+        'Newcastle',
+        'Perth',
+        'Sydney',
+        'Townsville',
+        'Wollongong',
+    ];
+
+    const languageData = [
+        'C',
+        'C#',
+        'C++',
+        'Go',
+        'Java',
+        'JavaScript',
+        'Kotlin',
+        'PHP',
+        'Python',
+        'Ruby',
+        'Rust',
+        'Swift',
+        'TypeScript',
+    ];
+
+    const peopleData = [
+        'Aisha Rahman',
+        'Amelia Hart',
+        'Carlos Mendoza',
+        'Chloé Martin',
+        'Dev Patel',
+        'Elena Rossi',
+        'Hana Suzuki',
+        'Ibrahim Haddad',
+        'Léa Dubois',
+        'Lucas Silva',
+        'Maya Thompson',
+        'Noah Williams',
+        'Priya Kapoor',
+        'Sofia García',
+    ];
+
+    const frameworkData = [
+        { name: 'Frost UI', type: 'UI library' },
+        { name: 'Frost Query', type: 'DOM utilities' },
+        { name: 'React', type: 'UI library' },
+        { name: 'Svelte', type: 'Compiler' },
+        { name: 'Vue', type: 'UI framework' },
+    ];
+
+    const sizeData = [
+        'A short result',
+        'A medium-length result',
+        'A deliberately long result that demonstrates predictable wrapping and overflow inside the available viewport',
+    ];
+
+    const colorData = [
+        'Amber',
+        'Blue',
+        'Crimson',
+        'Emerald',
+        'Indigo',
+        'Orange',
+        'Rose',
+        'Violet',
+    ];
+
+    const teammateData = [
+        'Aisha Rahman',
+        'Carlos Mendoza',
+        'Chloé Martin',
+        'Dev Patel',
+        'Elena Rossi',
+        'Hana Suzuki',
+        'Ibrahim Haddad',
+    ];
+
+    const rtlData = [
+        'أبو ظبي',
+        'الإسكندرية',
+        'الدوحة',
+        'دبي',
+        'عمّان',
+        'مسقط',
+    ];
+
+    const destinationData = Array.from(
+        { length: 48 },
+        (_, index) => `Destination ${String(index + 1).padStart(2, '0')}`,
+    );
+
+    const normalize = (value) =>
+        value
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+
+    const filterResults = (values, term = '') => {
+        const normalizedTerm = normalize(term);
+
+        return values.filter((value) => normalize(value).includes(normalizedTerm));
+    };
+
+    const waitForNetwork = (duration, signal) => new Promise((resolve, reject) => {
+        const onAbort = () => {
+            globalThis.clearTimeout(timeout);
+            reject(signal.reason || new DOMException('The request was aborted.', 'AbortError'));
+        };
+        const timeout = globalThis.setTimeout(() => {
+            signal.removeEventListener('abort', onAbort);
+            resolve();
+        }, duration);
+
+        if (signal.aborted) {
+            onAbort();
+        } else {
+            signal.addEventListener('abort', onAbort, { once: true });
+        }
+    });
+
     Autocomplete.init($.findOne('#hero-autocomplete'), {
         data: cityData,
         fullWidth: true,
@@ -269,15 +314,9 @@ $.ready(() => {
         methodNode,
         'change.ui.autocomplete show.ui.autocomplete shown.ui.autocomplete hide.ui.autocomplete hidden.ui.autocomplete',
         (event) => {
-            const entry = $.create('p', {
-                class: 'small font-monospace py-2 border-bottom',
-                text: event.type === 'change.ui.autocomplete' ?
-                    `${event.type} — value: ${$.getValue(methodNode)}` :
-                    event.type,
-            });
-
-            $.append('#event-log', entry);
-            $.setScrollY('#event-log', $.height('#event-log', { boxSize: $.SCROLL_BOX }));
+            logEvent(event.type === 'change.ui.autocomplete' ?
+                `${event.type} — value: ${$.getValue(methodNode)}` :
+                event.type);
         },
     );
 
@@ -324,22 +363,4 @@ $.ready(() => {
                 break;
         }
     });
-
-    $.addEvent('#clear-events', 'click', (_) => {
-        $.empty('#event-log');
-    });
-
-    $('[data-demo-theme]').addEvent('change', (event) => {
-        const theme = $.getValue(event.currentTarget);
-
-        if (theme === 'system') {
-            localStorage.removeItem('frostui-autocomplete-demo-theme');
-        } else {
-            localStorage.setItem('frostui-autocomplete-demo-theme', theme);
-        }
-
-        setTheme(theme);
-    });
-
-    setTheme(document.documentElement.dataset.uiTheme || 'system');
 });

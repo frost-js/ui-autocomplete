@@ -1,5 +1,11 @@
+section[id],
+.demo-anchor {
+    scroll-margin-top: 6rem;
+}
+
 .demo-event-log {
     height: 18rem;
+    overflow-y: auto;
 }
 
 .demo-event-log > :last-child {
@@ -16,9 +22,9 @@
 }
 
 .demo-result {
-    align-items: center;
     display: flex;
     gap: .75rem;
+    align-items: center;
     justify-content: space-between;
 }
 
@@ -27,8 +33,8 @@
 }
 
 .demo-result-meta {
-    color: var(--ui-secondary-color);
     font-size: var(--ui-font-size-sm);
+    color: var(--ui-secondary-color);
     white-space: nowrap;
 }
 
