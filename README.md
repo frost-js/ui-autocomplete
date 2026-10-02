@@ -1,56 +1,50 @@
 # Frost UI Autocomplete
 
-[![CI](https://github.com/frost-js/ui-autocomplete/actions/workflows/ci.yml/badge.svg)](https://github.com/frost-js/ui-autocomplete/actions/workflows/ci.yml)
-[![Codecov](https://codecov.io/gh/frost-js/ui-autocomplete/graph/badge.svg)](https://codecov.io/gh/frost-js/ui-autocomplete)
-[![npm](https://img.shields.io/npm/v/%40fr0st%2Fui-autocomplete)](https://www.npmjs.com/package/@fr0st/ui-autocomplete)
-[![npm downloads](https://img.shields.io/npm/dm/%40fr0st%2Fui-autocomplete)](https://www.npmjs.com/package/@fr0st/ui-autocomplete)
-[![JS gzip size](https://img.badgesize.io/https://cdn.jsdelivr.net/npm/@fr0st/ui-autocomplete@latest/dist/frost-ui-autocomplete.min.js?compression=gzip&label=JS%20gzip)](https://www.jsdelivr.com/package/npm/@fr0st/ui-autocomplete)
-[![CSS gzip size](https://img.badgesize.io/https://cdn.jsdelivr.net/npm/@fr0st/ui-autocomplete@latest/dist/frost-ui-autocomplete.min.css?compression=gzip&label=CSS%20gzip)](https://www.jsdelivr.com/package/npm/@fr0st/ui-autocomplete)
-[![License](https://img.shields.io/npm/l/%40fr0st%2Fui-autocomplete)](LICENSE)
+[![CI](https://github.com/frost-js/ui-autocomplete/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/frost-js/ui-autocomplete/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/frost-js/ui-autocomplete/branch/main/graph/badge.svg)](https://codecov.io/gh/frost-js/ui-autocomplete)
+[![npm version](https://img.shields.io/npm/v/%40fr0st%2Fui-autocomplete?style=flat-square)](https://www.npmjs.com/package/@fr0st/ui-autocomplete)
+[![npm downloads](https://img.shields.io/npm/dm/%40fr0st%2Fui-autocomplete?style=flat-square)](https://www.npmjs.com/package/@fr0st/ui-autocomplete)
+[![JS gzip size](https://img.badgesize.io/frost-js/ui-autocomplete/main/dist/frost-ui-autocomplete.min.js?compression=gzip&label=JS%20gzip%20size&style=flat-square)](https://github.com/frost-js/ui-autocomplete/blob/main/dist/frost-ui-autocomplete.min.js)
+[![CSS gzip size](https://img.badgesize.io/frost-js/ui-autocomplete/main/dist/frost-ui-autocomplete.min.css?compression=gzip&label=CSS%20gzip%20size&style=flat-square)](https://github.com/frost-js/ui-autocomplete/blob/main/dist/frost-ui-autocomplete.min.css)
+[![license](https://img.shields.io/github/license/frost-js/ui-autocomplete?style=flat-square)](./LICENSE)
 
-An accessible autocomplete component for [Frost UI](https://github.com/frost-js/ui). It supports local and asynchronous data, cancellable pagination, custom rendering, keyboard navigation, RTL layouts, and native or fQuery initialization.
+Autocomplete for Frost UI with local and asynchronous data, cancellable pagination, custom rendering, keyboard navigation, RTL layouts, and native or fQuery initialization.
 
 ## Highlights
 
-- Accessible combobox and listbox semantics with active-descendant keyboard navigation.
-- Static, asynchronous, paginated, and abortable result sources.
-- Safe-by-default string rendering plus an explicit trusted-DOM rendering path.
-- Popper-powered placement, configurable sizing, RTL support, and responsive overflow.
-- ESM and UMD distributions, with source maps and expanded/minified CSS.
-- Native JavaScript and [fQuery](https://github.com/frost-js/fquery) APIs.
+- Accessible combobox and listbox semantics with active-descendant keyboard navigation
+- Static, asynchronous, paginated, and abortable result sources
+- Safe-by-default string rendering plus an explicit trusted-DOM rendering path
+- Popper-powered placement, configurable sizing, RTL support, and responsive overflow
+- Native `Autocomplete` class and `autocomplete` fQuery plugin
+- Existing-instance reuse with frozen resolved options
+- Prebuilt ESM and UMD bundles with source maps
+- Expanded and minified component CSS with source maps
+- JSDoc-powered IntelliSense
+
+Explore [the demo](./demo/index.html) for interactive examples.
 
 ## Installation
 
 ### Browser projects / bundlers
 
-Install Autocomplete with its Frost UI v4 and fQuery v5 peers:
-
 ```bash
-npm i @fr0st/ui-autocomplete @fr0st/ui @fr0st/query
+npm i @fr0st/ui-autocomplete
 ```
 
-The package root resolves to the compiled ESM bundle. Import the Frost UI and Autocomplete stylesheets and the default component export:
+Frost UI Autocomplete's package entry point is ESM-only and requires a browser DOM. Import the default `Autocomplete` export and the stylesheets in browser projects and bundlers.
 
 ```js
 import '@fr0st/ui/dist/frost-ui.min.css';
 import '@fr0st/ui-autocomplete/dist/frost-ui-autocomplete.min.css';
 import Autocomplete from '@fr0st/ui-autocomplete';
-
-const autocomplete = Autocomplete.init(
-    document.querySelector('#city'),
-    {
-        data: ['Brisbane', 'Melbourne', 'Perth', 'Sydney'],
-    },
-);
 ```
 
-Importing the module registers Autocomplete with Frost UI and adds the fQuery `autocomplete` plugin. `@fr0st/ui` and `@fr0st/query` are peer dependencies so the component shares the application's UI and fQuery instances. The package root, `dist/*`, and `src/*` are available through package exports.
-
-Autocomplete requires a browser DOM or a compatible DOM environment configured through fQuery. Server-rendered applications should load the component on the client.
+`@fr0st/ui` and `@fr0st/query` are peer dependencies so the component shares the application's instances.
 
 ### Browser (ESM)
 
-The ESM bundle imports `@fr0st/ui` and `@fr0st/query`, and fQuery imports `@fr0st/core`. Map all three dependencies when loading the bundle directly in a browser:
+The ESM bundle imports `@fr0st/ui` and `@fr0st/query`. fQuery also imports `@fr0st/core`, so map all three dependencies when loading the bundle directly in a browser:
 
 ```html
 <link
@@ -59,7 +53,6 @@ The ESM bundle imports `@fr0st/ui` and `@fr0st/query`, and fQuery imports `@fr0s
 <link
     rel="stylesheet"
     href="https://cdn.jsdelivr.net/npm/@fr0st/ui-autocomplete@latest/dist/frost-ui-autocomplete.min.css">
-
 <script type="importmap">
 {
     "imports": {
@@ -71,42 +64,39 @@ The ESM bundle imports `@fr0st/ui` and `@fr0st/query`, and fQuery imports `@fr0s
 </script>
 <script type="module">
     import Autocomplete from 'https://cdn.jsdelivr.net/npm/@fr0st/ui-autocomplete@latest/dist/frost-ui-autocomplete.esm.min.js';
-
-    Autocomplete.init(document.querySelector('#city'), {
-        data: ['Brisbane', 'Melbourne', 'Perth', 'Sydney'],
-    });
 </script>
 ```
 
 ### Browser (UMD)
 
-Load Frost UI's all-in-one bundle before Autocomplete. The UI bundle supplies both the `UI` and `fQuery` globals expected by the component:
+Load the bundles from your own copy or a CDN:
 
 ```html
+<link
+    rel="stylesheet"
+    href="/path/to/dist/frost-ui.min.css">
+<link
+    rel="stylesheet"
+    href="/path/to/dist/frost-ui-autocomplete.min.css">
+<script src="/path/to/dist/frost-ui-bundle.min.js"></script>
+<script src="/path/to/dist/frost-ui-autocomplete.min.js"></script>
+<!-- or -->
 <link
     rel="stylesheet"
     href="https://cdn.jsdelivr.net/npm/@fr0st/ui@latest/dist/frost-ui.min.css">
 <link
     rel="stylesheet"
     href="https://cdn.jsdelivr.net/npm/@fr0st/ui-autocomplete@latest/dist/frost-ui-autocomplete.min.css">
-
 <script src="https://cdn.jsdelivr.net/npm/@fr0st/ui@latest/dist/frost-ui-bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@fr0st/ui-autocomplete@latest/dist/frost-ui-autocomplete.min.js"></script>
 <script>
-    const autocomplete = UI.Autocomplete.init(
-        document.querySelector('#city'),
-        {
-            data: ['Brisbane', 'Melbourne', 'Perth', 'Sydney'],
-        },
-    );
+    const { Autocomplete } = globalThis.UI;
 </script>
 ```
 
-The UMD bundle adds `Autocomplete` to the existing `globalThis.UI` object. It expects `globalThis.UI` and `globalThis.fQuery` to exist before it loads. If the non-bundled Frost UI build is used instead, load fQuery, Frost UI, and Autocomplete in that order.
+The UMD bundle adds `Autocomplete` to the existing `globalThis.UI` object. Load Frost UI's all-in-one bundle first; it supplies the `UI` and `fQuery` globals.
 
-Do not load the separate fQuery script when using `frost-ui-bundle.js` or `frost-ui-bundle.min.js`.
-
-Autocomplete does not inject styles. Always load Frost UI CSS first, followed by the Autocomplete CSS. Expanded `.css` files are also available for development.
+The package root resolves to the prebuilt ESM bundle. Published files under `dist/` and `src/` are also available through matching package subpaths.
 
 ## Usage
 
@@ -154,51 +144,36 @@ Autocomplete.init(document.querySelector('#repository'), {
 
 ## Options
 
-Pass options to `Autocomplete.init`, `$(...).autocomplete(...)`, or Frost UI's `data-ui-*` attributes. JavaScript callbacks must be passed as JavaScript options.
+Options are resolved in this order:
+
+1. Component defaults
+2. The element's `data-ui-*` attributes
+3. Options passed to `Autocomplete.init()`
+
+Resolved `instance.options` are shallow-frozen.
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
-| `lang` | `object` | `{ error: 'Error loading data.', loading: 'Loading..' }` | Loading and error messages. |
+| `appendTo` | `Element \| string \| null` | `null` | Menu container or selector. By default, the menu is inserted immediately after the input. Invalid or disconnected targets fall back to that placement. |
 | `data` | `string[]` | `[]` | Local result values. Ignored when `getResults` is set. |
-| `getResults` | `function \| null` | `null` | Synchronous or asynchronous result provider. |
-| `renderResult` | `function` | `(value) => value` | Renders a result as a sanitized string or trusted DOM node. |
-| `sanitize` | `function` | fQuery sanitizer | Sanitizes string results and loading/error messages. |
-| `isMatch` | `function` | case- and accent-insensitive contains | Determines whether a local value matches the term. |
-| `sortResults` | `function` | match position, then locale | Compares two matching local values. |
-| `minSearch` | `number` | `1` | Minimum input length before loading results. Use `0` for an empty query. |
 | `debounce` | `number` | `250` | Delay in milliseconds before invoking `getResults`, including pagination requests. Does not delay local filtering. |
 | `duration` | `number` | `100` | Show and hide transition duration in milliseconds. |
-| `maxHeight` | `string` | `'250px'` | Maximum menu height. |
-| `appendTo` | `Element \| string \| null` | `null` | Menu container or selector. By default, the menu is inserted immediately after the input. Invalid or disconnected targets fall back to that placement. |
+| `fixed` | `boolean` | `false` | Preserve the preferred placement instead of allowing Popper to flip it. `placement: 'auto'` still chooses a placement. |
 | `fullWidth` | `boolean` | `false` | Match the input's exact border-box width when enabled; otherwise size to content. |
+| `getResults` | `function \| null` | `null` | Synchronous or asynchronous result provider. |
+| `isMatch` | `function` | case- and accent-insensitive contains | Determines whether a local value matches the term. |
+| `lang` | `object` | `{ error: 'Error loading data.', loading: 'Loading..' }` | Loading and error messages. |
+| `maxHeight` | `string` | `'250px'` | Maximum menu height. |
+| `minContact` | `number \| false` | `false` | Minimum overlap in pixels along the alignment axis when Popper shifts the menu to fit; `false` allows zero overlap. |
+| `minSearch` | `number` | `1` | Minimum input length before loading results. Use `0` for an empty query. |
 | `placement` | `'auto' \| 'top' \| 'bottom' \| 'start' \| 'end'` | `'bottom'` | Preferred Popper placement; `start` and `end` follow the input's text direction. |
 | `position` | `'start' \| 'center' \| 'end'` | `'start'` | Alignment along the placement edge. |
-| `fixed` | `boolean` | `false` | Preserve the preferred placement instead of allowing Popper to flip it. `placement: 'auto'` still chooses a placement. |
+| `renderResult` | `function` | `(value) => value` | Renders a result as a sanitized string or trusted DOM node. |
+| `sanitize` | `function` | fQuery sanitizer | Sanitizes string results and loading/error messages. |
+| `sortResults` | `function` | match position, then locale | Compares two matching local values. |
 | `spacing` | `number` | `0` | Space in pixels between the input and menu. |
-| `minContact` | `number \| false` | `false` | Minimum overlap in pixels along the alignment axis when Popper shifts the menu to fit; `false` allows zero overlap. |
 
-An existing instance is reused when the same input is initialized again. Resolved options are frozen; dispose and reinitialize the input to use a different configuration.
-
-Prefix option names with `data-ui-` and use kebab case. Arrays and objects use JSON.
-
-```html
-<input
-    data-ui-toggle="autocomplete"
-    data-ui-data='["Alpha", "Beta", "Gamma"]'
-    data-ui-full-width="true"
-    data-ui-min-search="0"
-    id="greek-letter"
-    type="text"
->
-```
-
-The `data-ui-toggle` attribute is a convenient selector; it does not initialize Autocomplete by itself.
-
-```js
-$('[data-ui-toggle="autocomplete"]').autocomplete();
-```
-
-## Result provider contract
+### Result provider contract
 
 `getResults` receives:
 
@@ -211,10 +186,10 @@ $('[data-ui-toggle="autocomplete"]').autocomplete();
 Return an object, or a promise for one, with a `results` string array and optional `showMore` boolean.
 
 ```js
-{
+const response = {
     results: ['Brisbane', 'Bundaberg'],
     showMore: true,
-}
+};
 ```
 
 When `showMore` is true, scrolling near the end of the menu requests the next page. If the results do not fill the menu enough to scroll, additional pages load automatically until it becomes scrollable or pagination ends. The next request receives the number of loaded items as `offset`. An empty page or `showMore: false` ends pagination.
@@ -223,7 +198,7 @@ Each new search aborts the previous request and cancels pending provider debounc
 
 A thrown exception, rejected promise, or malformed response from the current provider request displays `lang.error`. An empty first page removes the loader and closes the menu unless `hide.ui.autocomplete` is prevented. Completions after disposal are ignored. Disposing from an abort listener stops further component work.
 
-## Rendering and sanitization
+### Rendering and sanitization
 
 `renderResult(value, item)` runs with the Autocomplete instance as `this`.
 
@@ -252,16 +227,40 @@ Autocomplete.init(document.querySelector('#framework'), {
 
 Custom `isMatch(value, term)` and `sortResults(a, b, term)` callbacks also run with the component instance as `this`. If `isMatch` throws, that value is excluded. If `sortResults` throws, that comparison falls back to `localeCompare`.
 
+## Data attributes
+
+Use kebab-case `data-ui-*` attributes for serializable options. Arrays and objects use JSON. Supply callbacks and DOM nodes through JavaScript.
+
+```html
+<input
+    data-ui-toggle="autocomplete"
+    data-ui-data='["Alpha", "Beta", "Gamma"]'
+    data-ui-full-width="true"
+    data-ui-min-search="0"
+    id="greek-letter"
+    type="text"
+>
+```
+
+```js
+import $ from '@fr0st/query';
+import '@fr0st/ui-autocomplete';
+
+$('[data-ui-toggle="autocomplete"]').autocomplete();
+```
+
+Data attributes configure options; they do not initialize Autocomplete by themselves. Initialize the component through the class or fQuery plugin. Changing an option's data attribute after initialization does not reconfigure the existing instance.
+
 ## Methods
 
 | Method | Returns | Description |
 | --- | --- | --- |
-| `Autocomplete.init(node, options?)` | `Autocomplete` | Return the existing instance for an input or create one. |
-| `show()` | `void` | Load and show results for the current value. Has no effect while already open, disabled, or read-only. |
+| `Autocomplete.init(node, options?)` | `Autocomplete` | Return the existing instance for an element or create one. |
+| `dispose()` | `void` | Remove the menu and listeners, cancel work, and restore the input's original role and ARIA attributes. |
 | `hide()` | `void` | Cancel queued input/scroll callbacks and hide the menu. Unless hiding is prevented, also cancel pending provider debounce and active requests. |
+| `show()` | `void` | Load and show results for the current value. Has no effect while already open, disabled, or read-only. |
 | `toggle()` | `void` | Show a hidden menu or hide a visible menu. |
 | `update()` | `void` | Refresh the current Popper position and dimensions. |
-| `dispose()` | `void` | Remove the menu and listeners, cancel work, and restore the input's original role and ARIA attributes. |
 
 ```js
 const autocomplete = Autocomplete.init(
@@ -275,28 +274,27 @@ autocomplete.hide();
 autocomplete.dispose();
 ```
 
-The fQuery plugin exposes the same public methods.
+## Lifecycle
 
-```js
-$('#fruit').autocomplete({ data: ['Apple', 'Pear'] });
-$('#fruit').autocomplete('show');
-$('#fruit').autocomplete('update');
-$('#fruit').autocomplete('dispose');
-```
+Calling `Autocomplete.init()` again for the same element returns its existing instance. Dispose the current instance before reinitializing with different options.
 
-The instance exposes the enhanced input as `instance.node` and its frozen resolved configuration as `instance.options`. Both become `null` after disposal.
+An instance exposes its original element as `instance.node` and its shallow-frozen resolved configuration as `instance.options`. Both become `null` after disposal.
+
+`dispose()` releases resources owned by the component and removes its registered instance. Repeated disposal is safe and does not affect a new instance initialized on the same element. Use a new instance before calling other methods after disposal.
+
+If initialization fails, the component releases resources it created and removes its registered instance before rethrowing the error. The element can then be initialized again.
 
 ## Events
 
 Events are dispatched on the input and bubble through the DOM.
 
-| Event | Can cancel action | Description |
-| --- | --- | --- |
-| `show.ui.autocomplete` | Yes | Fired before the menu begins opening. |
-| `shown.ui.autocomplete` | No | Fired after the opening transition completes. |
-| `hide.ui.autocomplete` | Yes | Fired before the menu begins closing. |
-| `hidden.ui.autocomplete` | No | Fired after the closing transition completes. |
-| `change.ui.autocomplete` | No | Fired after a different result is selected and written to the input. |
+| Event | Description |
+| --- | --- |
+| `show.ui.autocomplete` | Fired before the menu begins opening. Cancel with `event.preventDefault()`. |
+| `shown.ui.autocomplete` | Fired after the opening transition completes. |
+| `hide.ui.autocomplete` | Fired before the menu begins closing. Cancel with `event.preventDefault()`. |
+| `hidden.ui.autocomplete` | Fired after the closing transition completes. |
+| `change.ui.autocomplete` | Fired after a different result is selected and written to the input. |
 
 Calling `preventDefault()` during `show.ui.autocomplete` or `hide.ui.autocomplete` cancels that action. Preventing `shown`, `hidden`, or `change` has no effect on the completed action. Rapid opposing transitions are token-protected, so an earlier transition cannot emit a stale completion event.
 
@@ -308,7 +306,46 @@ $.addEvent('#fruit', 'change.ui.autocomplete', (event) => {
 
 Use fQuery's event API for namespaced event names. Native `addEventListener` uses the base event name, such as `change`, with `event.namespace === 'ui.autocomplete'` identifying component events.
 
-## CSS classes
+## fQuery API
+
+Importing Autocomplete registers `autocomplete` on `fQuery.QuerySet`:
+
+```js
+import $ from '@fr0st/query';
+import '@fr0st/ui-autocomplete';
+
+$('#fruit').autocomplete({ data: ['Apple', 'Pear'] });
+$('#fruit').autocomplete('show');
+$('#fruit').autocomplete('update');
+$('#fruit').autocomplete('dispose');
+```
+
+Pass an options object to initialize every matched element, or pass a public method name followed by its arguments. The first component or method result is returned.
+
+## Accessibility
+
+Autocomplete follows the editable combobox/listbox interaction model. Focus remains on the input while `aria-activedescendant` identifies the focused option.
+
+| Input | Behavior |
+| --- | --- |
+| `ArrowDown` | Open at the first result, or move to the next result. |
+| `ArrowUp` | Open at the last result, or move to the previous result. |
+| `Enter` | Select the focused result while the menu is open, preventing form submission. Otherwise retain normal Enter behavior. |
+| `Escape` | Close the menu and clear the active descendant. |
+| Typing | Filter local data or debounce the provider request once `minSearch` is met. |
+| Pointer hover | Focus the result without moving DOM focus from the input. |
+| Primary click | Select the result. |
+| Blur | Close the menu. |
+
+Keyboard navigation scrolls the focused result into view, including when opening with `ArrowUp`. Keydown events marked as composing are ignored, so confirming IME input does not select a result.
+
+The component applies `role="combobox"`, `aria-autocomplete="list"`, `aria-controls`, `aria-expanded`, and `aria-haspopup="listbox"` to the input. The menu uses `role="listbox"`; selectable rows use `role="option"`, generated IDs, and `aria-selected`. Loading and error rows are disabled live status content, and the menu exposes `aria-busy` during asynchronous work.
+
+Disabled and read-only inputs do not open. `dispose()` restores every pre-existing role and managed ARIA attribute exactly, including attributes present with an empty value.
+
+## Customization
+
+### CSS classes
 
 Override `Autocomplete.classes` before initialization to integrate a different class convention.
 
@@ -325,7 +362,7 @@ Override `Autocomplete.classes` before initialization to integrate a different c
 
 The stylesheet publishes runtime `--ui-autocomplete-*` custom properties on `.autocomplete-menu`. They derive from Frost UI tokens and can be scoped for local visual overrides.
 
-## Sass variables
+### Sass variables
 
 Every variable is declared with `!default`.
 
@@ -358,7 +395,15 @@ Every variable is declared with `!default`.
 | `$autocomplete-item-active-bg` | `var(--ui-primary)` |
 | `$autocomplete-info-color` | `var(--ui-secondary-color)` |
 
-Configure variables before loading the component stylesheet.
+### Custom Sass builds
+
+Install Sass and create an application stylesheet to customize the component:
+
+```bash
+npm i -D sass
+```
+
+`src/styles.scss`
 
 ```scss
 @use "@fr0st/ui-autocomplete/src/scss/vars" with (
@@ -368,28 +413,17 @@ Configure variables before loading the component stylesheet.
 @use "@fr0st/ui-autocomplete/src/scss/autocomplete";
 ```
 
-## Keyboard and accessibility
+Compile the entry point with npm package resolution enabled:
 
-Autocomplete follows the editable combobox/listbox interaction model. Focus remains on the input while `aria-activedescendant` identifies the focused option.
+```bash
+npx sass --load-path=node_modules src/styles.scss dist/styles.css
+```
 
-| Input | Behavior |
-| --- | --- |
-| `ArrowDown` | Open at the first result, or move to the next result. |
-| `ArrowUp` | Open at the last result, or move to the previous result. |
-| `Enter` | Select the focused result while the menu is open, preventing form submission. Otherwise retain normal Enter behavior. |
-| `Escape` | Close the menu and clear the active descendant. |
-| Typing | Filter local data or debounce the provider request once `minSearch` is met. |
-| Pointer hover | Focus the result without moving DOM focus from the input. |
-| Primary click | Select the result. |
-| Blur | Close the menu. |
+Configure the [component variables](./src/scss/vars.scss) before loading the `autocomplete` module. All variables have `!default` values. Include Frost UI CSS separately. Build tools that already resolve Sass modules from npm packages do not need the explicit load path.
 
-Keyboard navigation scrolls the focused result into view, including when opening with `ArrowUp`. Keydown events marked as composing are ignored, so confirming IME input does not select a result.
+## Themes and RTL
 
-The component applies `role="combobox"`, `aria-autocomplete="list"`, `aria-controls`, `aria-expanded`, and `aria-haspopup="listbox"` to the input. The menu uses `role="listbox"`; selectable rows use `role="option"`, generated IDs, and `aria-selected`. Loading and error rows are disabled live status content, and the menu exposes `aria-busy` during asynchronous work.
-
-Disabled and read-only inputs do not open. `dispose()` restores every pre-existing role and managed ARIA attribute exactly, including attributes present with an empty value.
-
-## Layout and themes
+Frost UI follows the user's preferred color scheme by default. Set `data-ui-theme="light"` or `data-ui-theme="dark"` on the document or an ancestor to select a theme explicitly.
 
 `fullWidth: true` measures the input's border box exactly. With `fullWidth: false`, the menu uses content sizing while remaining constrained to the viewport. Long result text stays on one line and is truncated with an ellipsis when needed; loading and error messages can wrap. The menu scrolls at `maxHeight`, and logical properties keep start/end alignment correct in RTL layouts.
 
@@ -397,7 +431,7 @@ The stylesheet consumes Frost UI color tokens, so it follows Frost UI's light, d
 
 ## Development
 
-Use Node.js matching `^20.19.0 || ^22.13.0 || >=24`. Install dependencies with `npm ci`, then install Playwright browsers with `npx playwright install --with-deps`.
+Install dependencies with `npm ci`, then install Playwright browsers with `npx playwright install --with-deps`.
 
 ```bash
 npm test
@@ -405,16 +439,14 @@ npm run lint
 npm run build
 ```
 
-`npm test` rebuilds JavaScript and CSS, then runs the Playwright suite in Chromium, Firefox, and WebKit. `npm run test:browser` runs the suite against the existing bundles, so rebuild after changing source files.
+`npm test` rebuilds the bundles, then runs the Playwright suite in Chromium, Firefox, and WebKit. `npm run test:browser` runs the suite against the existing bundles, so rebuild after changing source files.
 
 After building, `npm run test:coverage` runs Chromium tests and writes coverage reports to `coverage/`.
 
 `npm run test:headed` and `npm run test:ui` also use the existing bundles and open headed browsers or the Playwright UI.
 
-`npm run lint:sass:unused` checks for unused Sass variables.
-
-Open `demo/index.html` through a local HTTP server to explore the complete example gallery.
+To view the demo, open `demo/index.html` in your browser after building.
 
 ## License
 
-Frost UI Autocomplete is licensed under the [MIT License](LICENSE).
+Frost UI Autocomplete is released under the [MIT License](./LICENSE).
