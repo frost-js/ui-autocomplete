@@ -59,6 +59,41 @@ test.describe('Autocomplete', () => {
                 position: 'start',
             });
         });
+
+        test.describe('failed initialization', () => {
+            test.beforeEach(async ({ page }) => {
+                await page.evaluate((_) => {
+                    document.body.innerHTML =
+                        '<form id="lifecycle-form"><label for="lifecycle-input">Label</label>' +
+                        '<input id="lifecycle-input" tabindex="7" aria-hidden="false" aria-describedby="hint" type="text"></form>';
+                    window.resetCalls = 0;
+                    $.addEvent('#lifecycle-form', 'reset.ui.autocomplete', (_) => window.resetCalls++);
+                });
+            });
+
+            test('rolls back an invalid remote language options', async ({ page }) => {
+                await expect(page.evaluate((_) =>
+                    UI.Autocomplete.init($.findOne('#lifecycle-input'), { getResults: (_) => [], lang: null }),
+                )).rejects.toThrow();
+
+                expect(await page.evaluate((_) => $.hasData('#lifecycle-input', 'autocomplete'))).toBe(false);
+                await expect(page.locator('#lifecycle-input')).not.toHaveClass(/\bvisually-hidden\b/);
+                await expect(page.locator('#lifecycle-input')).toHaveAttribute('tabindex', '7');
+                await expect(page.locator('#lifecycle-input')).toHaveAttribute('aria-hidden', 'false');
+                await expect(page.locator('#lifecycle-input')).toHaveAttribute('aria-describedby', 'hint');
+                await expect(page.locator('#lifecycle-form > label')).not.toHaveAttribute('id');
+                await expect(page.locator('#lifecycle-form > *')).toHaveCount(2);
+
+                await page.evaluate((_) => $.triggerEvent('#lifecycle-form', 'reset.ui.autocomplete'));
+                expect(await page.evaluate((_) => window.resetCalls)).toBe(1);
+
+                expect(await page.evaluate((_) => {
+                    const node = $.findOne('#lifecycle-input');
+                    const instance = UI.Autocomplete.init(node);
+                    return $.getData(node, 'autocomplete') === instance;
+                })).toBe(true);
+            });
+        });
     });
 
     test.describe('#dispose', () => {

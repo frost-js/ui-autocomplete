@@ -203,13 +203,18 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		*/
 		constructor(node, options) {
 			super(node, options);
-			if (Array.isArray(this.options.data)) this.#data = this.options.data.filter((value) => typeof value === "string");
-			if (this.#hasRemoteResults()) {
-				const debounce = Math.max(0, Number(this.options.debounce) || 0);
-				this.#loadResults = _fr0st_query.default._debounce((request) => this.#requestResults(request), debounce);
+			try {
+				if (Array.isArray(this.options.data)) this.#data = this.options.data.filter((value) => typeof value === "string");
+				if (this.#hasRemoteResults()) {
+					const debounce = Math.max(0, Number(this.options.debounce) || 0);
+					this.#loadResults = _fr0st_query.default._debounce((request) => this.#requestResults(request), debounce);
+				}
+				this.#render();
+				this.#events();
+			} catch (error) {
+				this.dispose();
+				throw error;
 			}
-			this.#render();
-			this.#events();
 		}
 		/** @inheritdoc */
 		dispose() {

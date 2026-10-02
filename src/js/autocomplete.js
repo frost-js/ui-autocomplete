@@ -182,21 +182,26 @@ export default class Autocomplete extends BaseComponent {
     constructor(node, options) {
         super(node, options);
 
-        if (Array.isArray(this.options.data)) {
-            this.#data = this.options.data.filter((value) => typeof value === 'string');
+        try {
+            if (Array.isArray(this.options.data)) {
+                this.#data = this.options.data.filter((value) => typeof value === 'string');
+            }
+
+            if (this.#hasRemoteResults()) {
+                const debounce = Math.max(0, Number(this.options.debounce) || 0);
+
+                this.#loadResults = $._debounce(
+                    (request) => this.#requestResults(request),
+                    debounce,
+                );
+            }
+
+            this.#render();
+            this.#events();
+        } catch (error) {
+            this.dispose();
+            throw error;
         }
-
-        if (this.#hasRemoteResults()) {
-            const debounce = Math.max(0, Number(this.options.debounce) || 0);
-
-            this.#loadResults = $._debounce(
-                (request) => this.#requestResults(request),
-                debounce,
-            );
-        }
-
-        this.#render();
-        this.#events();
     }
 
     /** @inheritdoc */
