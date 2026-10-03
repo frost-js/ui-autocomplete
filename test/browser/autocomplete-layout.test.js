@@ -3,7 +3,7 @@ import { expect, test } from '#test';
 test.describe('Autocomplete layout', () => {
     test.beforeEach(async ({ page }) => {
         await page.evaluate((markup) => {
-            document.body.innerHTML = markup;
+            $.setHtml(document.body, markup);
         }, '<input id="autocomplete">');
     });
 
@@ -13,7 +13,7 @@ test.describe('Autocomplete layout', () => {
             { name: 'QuerySet', update: () => $('#autocomplete').autocomplete('update') },
         ]) {
             test(`updates full-width sizing after the input changes (${name})`, async ({ page }) => {
-                await page.evaluate((_) => {
+                await page.evaluate(() => {
                     const input = $.findOne('#autocomplete');
                     $.setStyle(input, { boxSizing: 'border-box', inlineSize: '120px' });
                     window.autocomplete = UI.Autocomplete.init(input, {
@@ -33,7 +33,7 @@ test.describe('Autocomplete layout', () => {
             });
 
             test(`does nothing while hidden (${name})`, async ({ page }) => {
-                await page.evaluate((_) => {
+                await page.evaluate(() => {
                     window.autocomplete = UI.Autocomplete.init($.findOne('#autocomplete'), {
                         data: ['One'],
                         minSearch: 0,
@@ -49,7 +49,7 @@ test.describe('Autocomplete layout', () => {
 
     test.describe('sizing and overflow', () => {
         test('matches the exact input border-box with fullWidth', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 const input = $.findOne('#autocomplete');
                 $.setStyle(input, { boxSizing: 'border-box', inlineSize: '96px' });
                 UI.Autocomplete.init(input, {
@@ -66,7 +66,7 @@ test.describe('Autocomplete layout', () => {
         });
 
         test('uses intrinsic sizing when fullWidth is disabled', async ({ page }) => {
-            const widths = await page.evaluate((_) => {
+            const widths = await page.evaluate(() => {
                 $.setStyle(document.body, { inlineSize: '600px' });
                 const input = $.findOne('#autocomplete');
                 $.setStyle(input, { boxSizing: 'border-box', inlineSize: '240px' });
@@ -86,7 +86,7 @@ test.describe('Autocomplete layout', () => {
         });
 
         test('constrains long results and vertical overflow', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 const results = Array.from({ length: 30 }, (_, index) =>
                     `${index}: ${'Long autocomplete result '.repeat(20)}`,
                 );
@@ -108,7 +108,7 @@ test.describe('Autocomplete layout', () => {
 
     test.describe('attachment and positioning', () => {
         test('appends to a configured container', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 $.append(document.body, $.create('div', { attributes: { id: 'portal' } }));
                 UI.Autocomplete.init($.findOne('#autocomplete'), {
                     appendTo: '#portal',
@@ -121,7 +121,7 @@ test.describe('Autocomplete layout', () => {
         });
 
         test('falls back after the input for an invalid append selector', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 UI.Autocomplete.init($.findOne('#autocomplete'), {
                     appendTo: '[',
                     data: ['One'],
@@ -133,7 +133,7 @@ test.describe('Autocomplete layout', () => {
         });
 
         test('applies top placement and configured spacing', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 $.setStyle(document.body, { padding: '200px' });
                 const input = $.findOne('#autocomplete');
                 UI.Autocomplete.init(input, {
@@ -148,7 +148,7 @@ test.describe('Autocomplete layout', () => {
             const menu = page.locator('.autocomplete-menu');
             await expect(input).toHaveAttribute('data-ui-placement', 'top');
             await expect(menu).toHaveAttribute('data-ui-placement', 'top');
-            const gap = await page.evaluate((_) => {
+            const gap = await page.evaluate(() => {
                 const inputBox = $.findOne('#autocomplete').getBoundingClientRect();
                 const menuBox = $.findOne('.autocomplete-menu').getBoundingClientRect();
                 return Math.round(inputBox.top - menuBox.bottom);
@@ -157,7 +157,7 @@ test.describe('Autocomplete layout', () => {
         });
 
         test('aligns logical start in RTL', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 $.setAttribute(document.documentElement, { dir: 'rtl' });
                 const input = $.findOne('#autocomplete');
                 $.setStyle(input, { inlineSize: '240px' });
@@ -170,7 +170,7 @@ test.describe('Autocomplete layout', () => {
             const menu = page.locator('.autocomplete-menu');
             await expect(menu).toHaveCSS('direction', 'rtl');
             await expect(menu).toHaveCSS('text-align', 'start');
-            const edgeDifference = await page.evaluate((_) => {
+            const edgeDifference = await page.evaluate(() => {
                 const inputBox = $.findOne('#autocomplete').getBoundingClientRect();
                 const menuBox = $.findOne('.autocomplete-menu').getBoundingClientRect();
                 return Math.abs(inputBox.right - menuBox.right);
@@ -181,7 +181,7 @@ test.describe('Autocomplete layout', () => {
 
     test.describe('appearance and motion', () => {
         test('uses dropdown-aligned visual styles and show state', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 UI.Autocomplete.init($.findOne('#autocomplete'), {
                     data: ['One'],
                     minSearch: 0,
@@ -204,8 +204,8 @@ test.describe('Autocomplete layout', () => {
         ]) {
             test(`supports ${size} inputs`, async ({ page }) => {
                 await page.evaluate((size) => {
-                    const input = document.querySelector('#autocomplete');
-                    input.classList.add(`input-${size}`);
+                    const input = $.findOne('#autocomplete');
+                    $.addClass(input, `input-${size}`);
                     UI.Autocomplete.init(input, { data: ['One'], minSearch: 0 }).show();
                 }, size);
 
@@ -219,7 +219,7 @@ test.describe('Autocomplete layout', () => {
         ]) {
             test(`respects ${reducedMotion} motion preferences`, async ({ page }) => {
                 await page.emulateMedia({ reducedMotion });
-                await page.evaluate((_) => {
+                await page.evaluate(() => {
                     UI.Autocomplete.init($.findOne('#autocomplete'), {
                         data: ['One'],
                         duration: 125,
@@ -234,7 +234,7 @@ test.describe('Autocomplete layout', () => {
         test('uses system colors in forced-colors mode', async ({ browserName, page }) => {
             test.skip(browserName !== 'chromium', 'Forced colors emulation is Chromium-only.');
             await page.emulateMedia({ forcedColors: 'active' });
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 UI.Autocomplete.init($.findOne('#autocomplete'), {
                     data: ['One'],
                     minSearch: 0,

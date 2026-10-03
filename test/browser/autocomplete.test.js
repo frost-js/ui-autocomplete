@@ -3,16 +3,16 @@ import { expect, test } from '#test';
 test.describe('Autocomplete', () => {
     test.beforeEach(async ({ page }) => {
         await page.evaluate((markup) => {
-            document.body.innerHTML = markup;
+            $.setHtml(document.body, markup);
         }, '<input id="autocomplete"><input id="autocomplete2"><button id="outside">Outside</button>');
     });
 
     test.describe('#init', () => {
         for (const { name, init } of [
-            { name: 'class', init: () => UI.Autocomplete.init(document.querySelector('#autocomplete')) },
+            { name: 'class', init: () => UI.Autocomplete.init($.findOne('#autocomplete')) },
             { name: 'QuerySet', init: () => $('#autocomplete').autocomplete() },
         ]) {
-            test(`creates an Autocomplete (${name})`, async ({ page }) => {
+            test(`creates and registers an Autocomplete (${name})`, async ({ page }) => {
                 const instance = await page.evaluateHandle(init);
                 expect(await instance.evaluate((value) => value instanceof UI.Autocomplete)).toBe(true);
                 expect(await instance.evaluate((value) => $.getData('#autocomplete', 'autocomplete') === value)).toBe(true);
@@ -20,17 +20,17 @@ test.describe('Autocomplete', () => {
         }
 
         test('creates multiple Autocompletes and returns the first (query)', async ({ page }) => {
-            expect(await page.evaluate((_) => {
+            expect(await page.evaluate(() => {
                 const first = $('input').autocomplete();
-                return first === $.getData('#autocomplete', 'autocomplete') &&
-                    ['#autocomplete', '#autocomplete2'].every((selector) =>
-                        $.getData(selector, 'autocomplete') instanceof UI.Autocomplete,
-                    );
-            })).toBe(true);
+                return {
+                    returnedFirst: first === $.getData('#autocomplete', 'autocomplete'),
+                    initialized: ['#autocomplete', '#autocomplete2'].map((selector) => $.getData(selector, 'autocomplete') instanceof UI.Autocomplete),
+                };
+            })).toEqual({ returnedFirst: true, initialized: [true, true] });
         });
 
         test('reuses an existing Autocomplete', async ({ page }) => {
-            expect(await page.evaluate((_) => {
+            expect(await page.evaluate(() => {
                 const input = $.findOne('#autocomplete');
                 const first = UI.Autocomplete.init(input, { data: ['First'] });
                 const second = UI.Autocomplete.init(input, { data: ['Second'] });
@@ -39,7 +39,7 @@ test.describe('Autocomplete', () => {
         });
 
         test('exposes frozen normalized options', async ({ page }) => {
-            expect(await page.evaluate((_) => {
+            expect(await page.evaluate(() => {
                 const autocomplete = UI.Autocomplete.init(
                     $.findOne('#autocomplete'),
                     { data: ['One'], minSearch: 0 },
@@ -62,21 +62,22 @@ test.describe('Autocomplete', () => {
 
         test.describe('failed initialization', () => {
             test.beforeEach(async ({ page }) => {
-                await page.evaluate((_) => {
-                    document.body.innerHTML =
+                await page.evaluate(() => {
+                    $.setHtml(document.body,
                         '<form id="lifecycle-form"><label for="lifecycle-input">Label</label>' +
-                        '<input id="lifecycle-input" tabindex="7" aria-hidden="false" aria-describedby="hint" type="text"></form>';
+                        '<input id="lifecycle-input" tabindex="7" aria-hidden="false" aria-describedby="hint" type="text"></form>',
+                    );
                     window.resetCalls = 0;
-                    $.addEvent('#lifecycle-form', 'reset.ui.autocomplete', (_) => window.resetCalls++);
+                    $.addEvent('#lifecycle-form', 'reset.ui.autocomplete', () => window.resetCalls++);
                 });
             });
 
             test('rolls back an invalid remote language options', async ({ page }) => {
-                await expect(page.evaluate((_) =>
-                    UI.Autocomplete.init($.findOne('#lifecycle-input'), { getResults: (_) => [], lang: null }),
+                await expect(page.evaluate(() =>
+                    UI.Autocomplete.init($.findOne('#lifecycle-input'), { getResults: () => [], lang: null }),
                 )).rejects.toThrow();
 
-                expect(await page.evaluate((_) => $.hasData('#lifecycle-input', 'autocomplete'))).toBe(false);
+                expect(await page.evaluate(() => $.hasData('#lifecycle-input', 'autocomplete'))).toBe(false);
                 await expect(page.locator('#lifecycle-input')).not.toHaveClass(/\bvisually-hidden\b/);
                 await expect(page.locator('#lifecycle-input')).toHaveAttribute('tabindex', '7');
                 await expect(page.locator('#lifecycle-input')).toHaveAttribute('aria-hidden', 'false');
@@ -84,10 +85,10 @@ test.describe('Autocomplete', () => {
                 await expect(page.locator('#lifecycle-form > label')).not.toHaveAttribute('id');
                 await expect(page.locator('#lifecycle-form > *')).toHaveCount(2);
 
-                await page.evaluate((_) => $.triggerEvent('#lifecycle-form', 'reset.ui.autocomplete'));
-                expect(await page.evaluate((_) => window.resetCalls)).toBe(1);
+                await page.evaluate(() => $.triggerEvent('#lifecycle-form', 'reset.ui.autocomplete'));
+                expect(await page.evaluate(() => window.resetCalls)).toBe(1);
 
-                expect(await page.evaluate((_) => {
+                expect(await page.evaluate(() => {
                     const node = $.findOne('#lifecycle-input');
                     const instance = UI.Autocomplete.init(node);
                     return $.getData(node, 'autocomplete') === instance;
@@ -102,7 +103,7 @@ test.describe('Autocomplete', () => {
             { name: 'QuerySet', dispose: () => $('#autocomplete').autocomplete('dispose') },
         ]) {
             test(`removes the menu and restores pre-existing input attributes (${name})`, async ({ page }) => {
-                await page.evaluate((_) => {
+                await page.evaluate(() => {
                     $.setHtml(
                         document.body,
                         `
@@ -135,7 +136,7 @@ test.describe('Autocomplete', () => {
                 await expect(input).toHaveAttribute('aria-haspopup', 'tree');
                 await expect(input).toHaveAttribute('aria-activedescendant', 'old-active');
                 await expect(page.locator('.autocomplete-menu')).toHaveCount(0);
-                expect(await page.evaluate((_) => ({
+                expect(await page.evaluate(() => ({
                     data: $.hasData('#autocomplete', 'autocomplete'),
                     node: window.disposedAutocomplete.node,
                     options: window.disposedAutocomplete.options,
@@ -148,7 +149,7 @@ test.describe('Autocomplete', () => {
         }
 
         test('restores absent ARIA attributes and supports repeated disposal', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 const autocomplete = UI.Autocomplete.init($.findOne('#autocomplete'));
                 autocomplete.dispose();
                 autocomplete.dispose();
@@ -168,7 +169,7 @@ test.describe('Autocomplete', () => {
         });
 
         test('disposes when the original input is removed', async ({ page }) => {
-            expect(await page.evaluate((_) => {
+            expect(await page.evaluate(() => {
                 const input = $.findOne('#autocomplete');
                 const autocomplete = UI.Autocomplete.init(input, {
                     data: ['One'],
@@ -176,15 +177,15 @@ test.describe('Autocomplete', () => {
                 });
                 autocomplete.show();
                 $.remove(input);
-                return autocomplete.node === null && autocomplete.options === null;
-            })).toBe(true);
+                return { node: autocomplete.node, options: autocomplete.options };
+            })).toEqual({ node: null, options: null });
 
             await expect(page.locator('#autocomplete')).toHaveCount(0);
             await expect(page.locator('.autocomplete-menu')).toHaveCount(0);
         });
 
         test('can be reinitialized after disposal', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 const input = $.findOne('#autocomplete');
                 UI.Autocomplete.init(input).dispose();
                 window.autocomplete = UI.Autocomplete.init(input, {
@@ -204,7 +205,7 @@ test.describe('Autocomplete', () => {
             { name: 'QuerySet', hide: () => $('#autocomplete').autocomplete('hide') },
         ]) {
             test(`hides and detaches the menu (${name})`, async ({ page }) => {
-                await page.evaluate((_) => {
+                await page.evaluate(() => {
                     const autocomplete = UI.Autocomplete.init($.findOne('#autocomplete'), {
                         data: ['One'],
                         minSearch: 0,
@@ -220,7 +221,7 @@ test.describe('Autocomplete', () => {
         }
 
         test('does nothing when the menu is already hidden', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 const autocomplete = UI.Autocomplete.init($.findOne('#autocomplete'));
                 autocomplete.hide();
             });
@@ -229,14 +230,14 @@ test.describe('Autocomplete', () => {
         });
 
         test('can cancel hiding', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 const input = $.findOne('#autocomplete');
                 const autocomplete = UI.Autocomplete.init(input, {
                     data: ['One'],
                     minSearch: 0,
                 });
                 autocomplete.show();
-                $.addEvent(input, 'hide.ui.autocomplete', (_) => false);
+                $.addEvent(input, 'hide.ui.autocomplete', () => false);
                 autocomplete.hide();
             });
 
@@ -251,7 +252,7 @@ test.describe('Autocomplete', () => {
             { name: 'QuerySet', show: () => $('#autocomplete').autocomplete('show') },
         ]) {
             test(`shows local results (${name})`, async ({ page }) => {
-                await page.evaluate((_) => {
+                await page.evaluate(() => {
                     UI.Autocomplete.init($.findOne('#autocomplete'), {
                         data: ['One', 'Two'],
                         minSearch: 0,
@@ -266,7 +267,7 @@ test.describe('Autocomplete', () => {
         }
 
         test('does not duplicate an already visible menu', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 const autocomplete = UI.Autocomplete.init($.findOne('#autocomplete'), {
                     data: ['One'],
                     minSearch: 0,
@@ -282,8 +283,8 @@ test.describe('Autocomplete', () => {
         for (const attribute of ['disabled', 'readonly']) {
             test(`does not show for a ${attribute} input`, async ({ page }) => {
                 await page.evaluate((attribute) => {
-                    const input = document.querySelector('#autocomplete');
-                    input.setAttribute(attribute, '');
+                    const input = $.findOne('#autocomplete');
+                    $.setAttribute(input, attribute, '');
                     UI.Autocomplete.init(input, { data: ['One'], minSearch: 0 }).show();
                 }, attribute);
 
@@ -293,13 +294,13 @@ test.describe('Autocomplete', () => {
         }
 
         test('can cancel showing', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 const input = $.findOne('#autocomplete');
                 const autocomplete = UI.Autocomplete.init(input, {
                     data: ['One'],
                     minSearch: 0,
                 });
-                $.addEvent(input, 'show.ui.autocomplete', (_) => false);
+                $.addEvent(input, 'show.ui.autocomplete', () => false);
                 autocomplete.show();
             });
 
@@ -314,7 +315,7 @@ test.describe('Autocomplete', () => {
             { name: 'QuerySet', toggle: () => $('#autocomplete').autocomplete('toggle') },
         ]) {
             test(`toggles the menu (${name})`, async ({ page }) => {
-                await page.evaluate((_) => {
+                await page.evaluate(() => {
                     window.autocomplete = UI.Autocomplete.init($.findOne('#autocomplete'), {
                         data: ['One'],
                         minSearch: 0,
@@ -331,7 +332,7 @@ test.describe('Autocomplete', () => {
 
     test.describe('input attributes and accessibility', () => {
         test('renders combobox and listbox attributes', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 UI.Autocomplete.init($.findOne('#autocomplete'), {
                     data: ['One'],
                     minSearch: 0,
@@ -351,7 +352,7 @@ test.describe('Autocomplete', () => {
         });
 
         test('maintains a valid active descendant while navigating', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 UI.Autocomplete.init($.findOne('#autocomplete'), {
                     data: ['One', 'Two'],
                     minSearch: 0,
@@ -368,14 +369,14 @@ test.describe('Autocomplete', () => {
         });
 
         test('generates unique menu and option IDs for multiple inputs', async ({ page }) => {
-            expect(await page.evaluate((_) => {
+            expect(await page.evaluate(() => {
                 for (const selector of ['#autocomplete', '#autocomplete2']) {
                     UI.Autocomplete.init($.findOne(selector), {
                         data: ['One'],
                         minSearch: 0,
                     }).show();
                 }
-                const ids = $.find('[id]').map((node) => node.id);
+                const ids = $.find('[id]').map((node) => $.getProperty(node, 'id'));
                 return new Set(ids).size === ids.length;
             })).toBe(true);
 
@@ -385,7 +386,7 @@ test.describe('Autocomplete', () => {
 
     test.describe('events', () => {
         test('triggers lifecycle events in order', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 const input = $.findOne('#autocomplete');
                 window.events = [];
                 for (const eventName of ['show', 'shown', 'hide', 'hidden']) {
@@ -399,11 +400,11 @@ test.describe('Autocomplete', () => {
                 });
                 window.autocomplete.show();
             });
-            await page.waitForFunction((_) => window.events.includes('shown.ui.autocomplete'));
-            await page.evaluate((_) => window.autocomplete.hide());
-            await page.waitForFunction((_) => window.events.includes('hidden.ui.autocomplete'));
+            await expect.poll(() => page.evaluate(() => window.events.includes('shown.ui.autocomplete'))).toBe(true);
+            await page.evaluate(() => window.autocomplete.hide());
+            await expect.poll(() => page.evaluate(() => window.events.includes('hidden.ui.autocomplete'))).toBe(true);
 
-            expect(await page.evaluate((_) => window.events)).toEqual([
+            expect(await page.evaluate(() => window.events)).toEqual([
                 'show.ui.autocomplete',
                 'shown.ui.autocomplete',
                 'hide.ui.autocomplete',
@@ -413,7 +414,7 @@ test.describe('Autocomplete', () => {
 
         test('suppresses stale transition completion events', async ({ page }) => {
             await page.emulateMedia({ reducedMotion: 'no-preference' });
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 const input = $.findOne('#autocomplete');
                 window.events = [];
                 $.addEvent(input, 'shown.ui.autocomplete hidden.ui.autocomplete', (event) => {
@@ -428,24 +429,24 @@ test.describe('Autocomplete', () => {
                 window.autocomplete.hide();
                 window.autocomplete.show();
             });
-            await page.evaluate(async (_) => {
-                await Promise.allSettled(document.querySelector('.autocomplete-menu').getAnimations()
+            await page.evaluate(async () => {
+                await Promise.allSettled($.findOne('.autocomplete-menu').getAnimations()
                     .map((animation) => animation.finished));
             });
 
-            await expect.poll(() => page.evaluate((_) => window.events)).toEqual(['shown']);
+            await expect.poll(() => page.evaluate(() => window.events)).toEqual(['shown']);
             await expect(page.locator('.autocomplete-menu')).toBeVisible();
         });
 
         test('triggers one change event when a different result is selected', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 const input = $.findOne('#autocomplete');
                 window.changes = [];
                 $.addEvent(input, 'change.ui.autocomplete', (event) => {
                     window.changes.push({
                         namespace: event.namespace,
                         type: event.type,
-                        value: event.currentTarget.value,
+                        value: $.getValue(event.currentTarget),
                     });
                 });
                 UI.Autocomplete.init(input, {
@@ -455,7 +456,7 @@ test.describe('Autocomplete', () => {
             });
             await page.locator('.autocomplete-item').click();
 
-            expect(await page.evaluate((_) => window.changes)).toEqual([
+            expect(await page.evaluate(() => window.changes)).toEqual([
                 {
                     namespace: 'ui.autocomplete',
                     type: 'change',
@@ -466,11 +467,11 @@ test.describe('Autocomplete', () => {
         });
 
         test('does not trigger change when selecting the current value', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 const input = $.findOne('#autocomplete');
                 $.setValue(input, 'One');
                 window.changes = 0;
-                $.addEvent(input, 'change.ui.autocomplete', (_) => window.changes++);
+                $.addEvent(input, 'change.ui.autocomplete', () => window.changes++);
                 UI.Autocomplete.init(input, {
                     data: ['One'],
                     minSearch: 0,
@@ -478,13 +479,13 @@ test.describe('Autocomplete', () => {
             });
             await page.locator('.autocomplete-item').click();
 
-            expect(await page.evaluate((_) => window.changes)).toBe(0);
+            expect(await page.evaluate(() => window.changes)).toBe(0);
         });
     });
 
     test.describe('user events', () => {
         test.beforeEach(async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 UI.Autocomplete.init($.findOne('#autocomplete'), {
                     data: ['One', 'Two', 'Three'],
                     minSearch: 0,
@@ -508,7 +509,7 @@ test.describe('Autocomplete', () => {
             test('updates focus on mouseover', async ({ page }) => {
                 const input = page.locator('#autocomplete');
                 await input.focus();
-                await page.evaluate((_) => $.getData('#autocomplete', 'autocomplete').show());
+                await page.evaluate(() => $.getData('#autocomplete', 'autocomplete').show());
                 const item = page.locator('.autocomplete-item').nth(1);
                 await item.hover();
 
@@ -527,7 +528,7 @@ test.describe('Autocomplete', () => {
             });
 
             test('does not suppress the context menu', async ({ page }) => {
-                const allowed = await page.evaluate((_) => {
+                const allowed = await page.evaluate(() => {
                     const input = $.findOne('#autocomplete');
                     input.focus();
                     $.getData(input, 'autocomplete').show();
@@ -564,7 +565,7 @@ test.describe('Autocomplete', () => {
             });
 
             test('selects with Enter without submitting the form', async ({ page }) => {
-                await page.evaluate((_) => {
+                await page.evaluate(() => {
                     $.setHtml(
                         document.body,
                         '<form id="form"><input id="autocomplete"><button>Submit</button></form>',
@@ -585,11 +586,11 @@ test.describe('Autocomplete', () => {
                 await input.press('Enter');
 
                 await expect(input).toHaveValue('One');
-                expect(await page.evaluate((_) => window.submits)).toBe(0);
+                expect(await page.evaluate(() => window.submits)).toBe(0);
             });
 
             test('closes with Escape without propagating to a parent handler', async ({ page }) => {
-                await page.evaluate((_) => {
+                await page.evaluate(() => {
                     window.escapes = 0;
                     $.addEvent(document.body, 'keydown', (event) => {
                         if (event.key === 'Escape') {
@@ -603,7 +604,7 @@ test.describe('Autocomplete', () => {
                 await input.press('Escape');
 
                 await expect(page.locator('.autocomplete-menu')).toHaveCount(0);
-                expect(await page.evaluate((_) => window.escapes)).toBe(0);
+                expect(await page.evaluate(() => window.escapes)).toBe(0);
             });
 
             test('ignores unrelated keys without changing the open menu', async ({ page }) => {
@@ -632,7 +633,7 @@ test.describe('Autocomplete', () => {
                 test.use({ mockClock: true });
 
                 test('ignores queued input work after focus moves away', async ({ page }) => {
-                    await page.evaluate((_) => {
+                    await page.evaluate(() => {
                         const input = $.findOne('#autocomplete');
                         input.focus();
                         $.setValue(input, 'o');
@@ -650,7 +651,7 @@ test.describe('Autocomplete', () => {
 
     test.describe('data option', () => {
         test('filters and sorts local data', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 UI.Autocomplete.init($.findOne('#autocomplete'), {
                     data: ['Beta', 'alphabet', 'Alpha'],
                 });
@@ -663,7 +664,7 @@ test.describe('Autocomplete', () => {
         for (const value of ['true', 'null', '001']) {
             test(`preserves the string value "${value}" when selected`, async ({ page }) => {
                 await page.evaluate((value) => {
-                    UI.Autocomplete.init(document.querySelector('#autocomplete'), {
+                    UI.Autocomplete.init($.findOne('#autocomplete'), {
                         data: [value],
                         minSearch: 0,
                     }).show();
@@ -675,7 +676,7 @@ test.describe('Autocomplete', () => {
         }
 
         test('ignores non-string data values', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 UI.Autocomplete.init($.findOne('#autocomplete'), {
                     data: ['One', null, 2, {}, 'Two'],
                     minSearch: 0,
@@ -692,7 +693,7 @@ test.describe('Autocomplete', () => {
         ]) {
             test(`handles ${name} data without opening`, async ({ page }) => {
                 await page.evaluate((options) => {
-                    UI.Autocomplete.init(document.querySelector('#autocomplete'), {
+                    UI.Autocomplete.init($.findOne('#autocomplete'), {
                         ...options,
                         minSearch: 0,
                     }).show();
@@ -703,7 +704,7 @@ test.describe('Autocomplete', () => {
         }
 
         test('reads local data from a data attribute', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 $.setDataset('#autocomplete', { uiData: ['One', 'Two'], uiMinSearch: 0 });
                 UI.Autocomplete.init($.findOne('#autocomplete')).show();
             });
@@ -712,7 +713,7 @@ test.describe('Autocomplete', () => {
         });
 
         test('refreshes local results while the menu is open', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 const input = $.findOne('#autocomplete');
                 input.focus();
                 UI.Autocomplete.init(input, {
@@ -730,7 +731,7 @@ test.describe('Autocomplete', () => {
 
     test.describe('matching and sorting', () => {
         test('matches case and accents and sorts by match position', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 UI.Autocomplete.init($.findOne('#autocomplete'), {
                     data: ['xCAFÉ', 'Cafe', 'cafeteria'],
                 });
@@ -741,7 +742,7 @@ test.describe('Autocomplete', () => {
         });
 
         test('uses custom matching and sorting callbacks with component context', async ({ page }) => {
-            const callbackData = await page.evaluate((_) => {
+            const callbackData = await page.evaluate(() => {
                 window.callbackData = [];
                 UI.Autocomplete.init($.findOne('#autocomplete'), {
                     data: ['One', 'Two'],
@@ -770,7 +771,7 @@ test.describe('Autocomplete', () => {
         });
 
         test('excludes results when isMatch throws', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 UI.Autocomplete.init($.findOne('#autocomplete'), {
                     data: ['One'],
                     isMatch() {
@@ -785,10 +786,10 @@ test.describe('Autocomplete', () => {
         });
 
         test('uses default sorting when sortResults throws', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 UI.Autocomplete.init($.findOne('#autocomplete'), {
                     data: ['Two', 'One'],
-                    isMatch: (_) => true,
+                    isMatch: () => true,
                     minSearch: 0,
                     sortResults() {
                         throw new Error('Sort failed');
@@ -803,7 +804,7 @@ test.describe('Autocomplete', () => {
 
     test.describe('minSearch', () => {
         test('waits for minSearch and closes after deletion below it', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 UI.Autocomplete.init($.findOne('#autocomplete'), {
                     data: ['Alpha'],
                     minSearch: 2,
@@ -819,8 +820,8 @@ test.describe('Autocomplete', () => {
         });
 
         test('normalizes negative minSearch for local results', async ({ page }) => {
-            await page.evaluate((_) => {
-                UI.Autocomplete.init(document.querySelector('#autocomplete'), {
+            await page.evaluate(() => {
+                UI.Autocomplete.init($.findOne('#autocomplete'), {
                     data: ['One'],
                     minSearch: -1,
                 }).show();
@@ -832,11 +833,11 @@ test.describe('Autocomplete', () => {
 
     test.describe('rendering and sanitization', () => {
         test('sanitizes string rendering', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 UI.Autocomplete.init($.findOne('#autocomplete'), {
                     data: ['One'],
                     minSearch: 0,
-                    renderResult: (_) => '<strong>Safe</strong><script data-unsafe>Unsafe</script>',
+                    renderResult: () => '<strong>Safe</strong><script data-unsafe>Unsafe</script>',
                 }).show();
             });
 
@@ -845,7 +846,7 @@ test.describe('Autocomplete', () => {
         });
 
         test('appends DOM nodes without cloning', async ({ page }) => {
-            expect(await page.evaluate((_) => {
+            expect(await page.evaluate(() => {
                 UI.Autocomplete.init($.findOne('#autocomplete'), {
                     data: ['One'],
                     minSearch: 0,
@@ -871,7 +872,7 @@ test.describe('Autocomplete', () => {
                     const options = {
                         data: ['One'],
                         minSearch: 0,
-                        renderResult: (_) => '<strong>One</strong><script data-unsafe>Unsafe</script>',
+                        renderResult: () => '<strong>One</strong><script data-unsafe>Unsafe</script>',
                     };
                     for (const callback of callbacks) {
                         options[callback] = () => {
@@ -906,7 +907,7 @@ test.describe('Autocomplete', () => {
 
     test.describe('customization', () => {
         test('uses customized component classes', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 UI.Autocomplete.classes.menu = 'autocomplete-menu custom-menu';
                 UI.Autocomplete.classes.item = 'autocomplete-item custom-item';
                 UI.Autocomplete.classes.focus = 'custom-focus';
@@ -922,7 +923,7 @@ test.describe('Autocomplete', () => {
         });
 
         test('reads option overrides from data attributes', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 $.setDataset('#autocomplete', {
                     uiData: ['One'],
                     uiDuration: 0,
@@ -944,7 +945,7 @@ test.describe('Autocomplete', () => {
         });
 
         test('allows default option customization', async ({ page }) => {
-            await page.evaluate((_) => {
+            await page.evaluate(() => {
                 UI.Autocomplete.defaults.data = ['Default result'];
                 UI.Autocomplete.defaults.minSearch = 0;
                 UI.Autocomplete.init($.findOne('#autocomplete')).show();
