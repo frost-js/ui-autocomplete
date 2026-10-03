@@ -3,7 +3,7 @@
 
 import $ from '@fr0st/query';
 import { BaseComponent, generateId, Popper, waitForTransition } from '@fr0st/ui';
-import { normalizeValue } from './helpers.js';
+import { normalizeText } from './helpers.js';
 
 const window = $.getWindow();
 
@@ -129,12 +129,12 @@ export default class Autocomplete extends BaseComponent {
         renderResult: (value) => value,
         sanitize: (input) => $.sanitize(input),
         isMatch(value, term) {
-            return normalizeValue(value).includes(normalizeValue(term));
+            return normalizeText(value).includes(normalizeText(term));
         },
         sortResults(a, b, term) {
-            const aNormalized = normalizeValue(a);
-            const bNormalized = normalizeValue(b);
-            const termNormalized = normalizeValue(term);
+            const aNormalized = normalizeText(a);
+            const bNormalized = normalizeText(b);
+            const termNormalized = normalizeText(term);
 
             if (termNormalized) {
                 const diff = aNormalized.indexOf(termNormalized) - bNormalized.indexOf(termNormalized);
@@ -162,7 +162,7 @@ export default class Autocomplete extends BaseComponent {
     #activeItems = [];
     #data = [];
     #errorNode = null;
-    #inputAttributes = new Map;
+    #inputAttributes = new Map();
     #inputEvent = null;
     #loaderNode = null;
     #loadResults = null;
@@ -293,7 +293,7 @@ export default class Autocomplete extends BaseComponent {
             $.removeAttribute(this.node, 'aria-activedescendant');
         }
 
-        waitForTransition(this.#menuNode, ['opacity']).then((_) => {
+        waitForTransition(this.#menuNode, ['opacity']).then(() => {
             if (!this.node || this.#transition !== transition) {
                 return;
             }
@@ -415,10 +415,10 @@ export default class Autocomplete extends BaseComponent {
             this.#menuNode,
             'mousedown.ui.autocomplete',
             '[data-ui-action="select"]',
-            (e) => {
-                if (e.button === 0) {
+            (event) => {
+                if (event.button === 0) {
                     // Keep focus on the combobox until the delegated click selects the item.
-                    e.preventDefault();
+                    event.preventDefault();
                 }
             },
         );
@@ -427,13 +427,13 @@ export default class Autocomplete extends BaseComponent {
             this.#menuNode,
             'click.ui.autocomplete',
             '[data-ui-action="select"]',
-            (e) => {
-                if (e.button !== 0) {
+            (event) => {
+                if (event.button !== 0) {
                     return;
                 }
 
-                e.preventDefault();
-                this.#selectItem(e.currentTarget);
+                event.preventDefault();
+                this.#selectItem(event.currentTarget);
             },
         );
 
@@ -441,14 +441,14 @@ export default class Autocomplete extends BaseComponent {
             this.#menuNode,
             'mouseover.ui.autocomplete',
             '[data-ui-action="select"]',
-            (e) => this.#focusItem(e.currentTarget),
+            (event) => this.#focusItem(event.currentTarget),
         );
 
-        $.addEvent(this.node, 'blur.ui.autocomplete', (_) => {
+        $.addEvent(this.node, 'blur.ui.autocomplete', () => {
             this.hide();
         });
 
-        this.#inputEvent = $._debounce((_) => {
+        this.#inputEvent = $._debounce(() => {
             if (
                 !this.node ||
                 !$.is(this.node, ':focus')
@@ -464,17 +464,17 @@ export default class Autocomplete extends BaseComponent {
                 return;
             }
 
-            if (!this.#load(this.node.value, 'first')) {
+            if (!this.#load($.getValue(this.node), 'first')) {
                 this.hide();
             }
         });
 
         $.addEvent(this.node, 'input.ui.autocomplete', this.#inputEvent);
 
-        $.addEvent(this.node, 'keydown.ui.autocomplete', (e) => {
+        $.addEvent(this.node, 'keydown.ui.autocomplete', (event) => {
             if (
-                e.isComposing ||
-                !['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(e.key)
+                event.isComposing ||
+                !['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(event.key)
             ) {
                 return;
             }
@@ -482,31 +482,31 @@ export default class Autocomplete extends BaseComponent {
             const open = $.isConnected(this.#menuNode) &&
                 this.#transition?.direction !== 'out';
 
-            if (e.key === 'Enter') {
+            if (event.key === 'Enter') {
                 const focusedNode = this.#getFocusedItem();
 
                 if (open && focusedNode) {
-                    e.preventDefault();
+                    event.preventDefault();
                     this.#selectItem(focusedNode);
                 }
 
                 return;
             }
 
-            if (e.key === 'Escape') {
+            if (event.key === 'Escape') {
                 if (open) {
-                    e.preventDefault();
-                    e.stopPropagation();
+                    event.preventDefault();
+                    event.stopPropagation();
                     this.hide();
                 }
 
                 return;
             }
 
-            e.preventDefault();
+            event.preventDefault();
 
             if (!open) {
-                this.#show(e.key === 'ArrowUp' ? 'last' : 'first');
+                this.#show(event.key === 'ArrowUp' ? 'last' : 'first');
                 return;
             }
 
@@ -514,20 +514,20 @@ export default class Autocomplete extends BaseComponent {
 
             if (!focusedNode) {
                 if (this.#activeItems.length) {
-                    const focusNode = e.key === 'ArrowUp' ?
+                    const focusNode = event.key === 'ArrowUp' ?
                         this.#activeItems.at(-1) :
                         this.#activeItems[0];
 
                     this.#focusItem(focusNode, { scroll: true });
                 } else if (!this.#request) {
-                    this.#load(this.node?.value ?? '', e.key === 'ArrowUp' ? 'last' : 'first');
+                    this.#load(this.node?.value ?? '', event.key === 'ArrowUp' ? 'last' : 'first');
                 }
 
                 return;
             }
 
             const currentIndex = this.#activeItems.indexOf(focusedNode);
-            const change = e.key === 'ArrowUp' ? -1 : 1;
+            const change = event.key === 'ArrowUp' ? -1 : 1;
             const focusNode = this.#activeItems[currentIndex + change];
 
             if (focusNode) {
@@ -536,7 +536,7 @@ export default class Autocomplete extends BaseComponent {
         });
 
         if (this.#hasRemoteResults()) {
-            this.#scrollEvent = $._throttle((_) => {
+            this.#scrollEvent = $._throttle(() => {
                 if (
                     !this.node ||
                     !$.isConnected(this.#menuNode) ||
@@ -555,7 +555,7 @@ export default class Autocomplete extends BaseComponent {
                     return;
                 }
 
-                const term = this.node.value;
+                const term = $.getValue(this.node);
 
                 if (term !== this.#term) {
                     this.#load(term, 'first');
@@ -744,7 +744,7 @@ export default class Autocomplete extends BaseComponent {
             class: this.constructor.classes.menu,
             style,
             attributes: {
-                'id': id,
+                id,
                 'role': 'listbox',
                 'aria-busy': false,
             },
@@ -949,7 +949,7 @@ export default class Autocomplete extends BaseComponent {
         }
 
         const request = {
-            controller: new AbortController,
+            controller: new AbortController(),
             focus,
             offset,
             term,
@@ -974,7 +974,7 @@ export default class Autocomplete extends BaseComponent {
      */
     #requestResults(request) {
         Promise.resolve()
-            .then((_) => {
+            .then(() => {
                 if (!this.#isCurrentRequest(request)) {
                     return;
                 }
@@ -991,7 +991,7 @@ export default class Autocomplete extends BaseComponent {
                 return this.options.getResults.call(this, options);
             })
             .then((response) => this.#renderResponse(request, response))
-            .catch((_) => {
+            .catch(() => {
                 if (!this.#isCurrentRequest(request)) {
                     return;
                 }
@@ -1002,7 +1002,7 @@ export default class Autocomplete extends BaseComponent {
                 $.detach(this.#errorNode);
                 $.append(this.#menuNode, this.#errorNode);
             })
-            .finally((_) => {
+            .finally(() => {
                 if (!this.#isCurrentRequest(request)) {
                     return;
                 }
@@ -1064,9 +1064,9 @@ export default class Autocomplete extends BaseComponent {
         }
 
         // Read the raw DOM string so values such as "true", "null", and "001" are not JSON-coerced.
-        const value = item.dataset.uiValue;
+        const value = $.getAttribute(item, 'data-ui-value');
 
-        if (value !== this.node.value) {
+        if (value !== $.getValue(this.node)) {
             $.setValue(this.node, value);
             $.triggerEvent(this.node, 'change.ui.autocomplete');
         }
@@ -1092,7 +1092,7 @@ export default class Autocomplete extends BaseComponent {
             return;
         }
 
-        const term = this.node.value;
+        const term = $.getValue(this.node);
 
         if (!this.#meetsMinimumSearch(term)) {
             this.#cancelRequest();
@@ -1145,13 +1145,13 @@ export default class Autocomplete extends BaseComponent {
 
         this.#focusItem(this.#getFocusedItem(), { scroll: true });
 
-        window.requestAnimationFrame((_) => {
+        window.requestAnimationFrame(() => {
             if (this.node && this.#transition === transition) {
                 this.update();
             }
         });
 
-        waitForTransition(this.#menuNode, ['opacity']).then((_) => {
+        waitForTransition(this.#menuNode, ['opacity']).then(() => {
             if (!this.node || this.#transition !== transition) {
                 return;
             }

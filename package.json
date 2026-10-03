@@ -31,6 +31,7 @@
             "default": "./dist/frost-ui-autocomplete.esm.js"
         },
         "./dist/*": "./dist/*",
+        "./src/scss/vars.scss": "./src/scss/_vars.scss",
         "./src/*": "./src/*"
     },
     "main": "./dist/frost-ui-autocomplete.esm.js",
