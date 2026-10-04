@@ -185,6 +185,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		#activeItems = [];
 		#data = [];
 		#errorNode = null;
+		#focusedItem = null;
 		#inputAttributes = /* @__PURE__ */ new Map();
 		#inputEvent = null;
 		#loaderNode = null;
@@ -237,6 +238,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 			this.#activeItems = null;
 			this.#data = null;
 			this.#errorNode = null;
+			this.#focusedItem = null;
 			this.#inputAttributes = null;
 			this.#inputEvent = null;
 			this.#loaderNode = null;
@@ -369,10 +371,9 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 				].includes(event.key)) return;
 				const open = _fr0st_query.default.isConnected(this.#menuNode) && this.#transition?.direction !== "out";
 				if (event.key === "Enter") {
-					const focusedNode = this.#getFocusedItem();
-					if (open && focusedNode) {
+					if (open && this.#focusedItem) {
 						event.preventDefault();
-						this.#selectItem(focusedNode);
+						this.#selectItem(this.#focusedItem);
 					}
 					return;
 				}
@@ -389,15 +390,14 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 					this.#show(event.key === "ArrowUp" ? "last" : "first");
 					return;
 				}
-				const focusedNode = this.#getFocusedItem();
-				if (!focusedNode) {
+				if (!this.#focusedItem) {
 					if (this.#activeItems.length) {
 						const focusNode = event.key === "ArrowUp" ? this.#activeItems.at(-1) : this.#activeItems[0];
 						this.#focusItem(focusNode, { scroll: true });
 					} else if (!this.#request) this.#load(_fr0st_query.default.getValue(this.node) ?? "", event.key === "ArrowUp" ? "last" : "first");
 					return;
 				}
-				const currentIndex = this.#activeItems.indexOf(focusedNode);
+				const currentIndex = this.#activeItems.indexOf(this.#focusedItem);
 				const change = event.key === "ArrowUp" ? -1 : 1;
 				const focusNode = this.#activeItems[currentIndex + change];
 				if (focusNode) this.#focusItem(focusNode, { scroll: true });
@@ -430,13 +430,9 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		*/
 		#focusItem(item, { scroll = false } = {}) {
 			if (!item || !this.#activeItems.includes(item)) return;
-			const focusedNode = this.#getFocusedItem();
-			if (focusedNode && !_fr0st_query.default.isSame(focusedNode, item)) {
-				_fr0st_query.default.removeClass(focusedNode, this.constructor.classes.focus);
-				_fr0st_query.default.removeDataset(focusedNode, "uiFocus");
-			}
+			if (this.#focusedItem && !_fr0st_query.default.isSame(this.#focusedItem, item)) _fr0st_query.default.removeClass(this.#focusedItem, this.constructor.classes.focus);
+			this.#focusedItem = item;
 			_fr0st_query.default.addClass(item, this.constructor.classes.focus);
-			_fr0st_query.default.setDataset(item, { uiFocus: true });
 			if (this.node) {
 				const id = _fr0st_query.default.getAttribute(item, "id");
 				if (id) _fr0st_query.default.setAttribute(this.node, { "aria-activedescendant": id });
@@ -448,13 +444,6 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 			const itemRect = _fr0st_query.default.rect(item, { offset: true });
 			if (itemRect.top < menuRect.top) _fr0st_query.default.setScrollY(this.#menuNode, menuScrollY + itemRect.top - menuRect.top);
 			else if (itemRect.bottom > menuRect.bottom) _fr0st_query.default.setScrollY(this.#menuNode, menuScrollY + itemRect.bottom - menuRect.bottom);
-		}
-		/**
-		* Gets the currently focused option.
-		* @returns {HTMLLIElement|null} The focused option, or `null`.
-		*/
-		#getFocusedItem() {
-			return this.#activeItems.find((item) => _fr0st_query.default.hasDataset(item, "uiFocus")) || null;
 		}
 		/**
 		* Gets sorted local results for a term.
@@ -636,7 +625,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		* @param {AutocompleteFocus} [options.focus='first'] The initial focus behavior.
 		*/
 		#renderResults(results, { append = false, focus = "first" } = {}) {
-			const focusedNode = append ? this.#getFocusedItem() : null;
+			const focusedNode = append ? this.#focusedItem : null;
 			if (!append) this.#resetMenu();
 			const newItems = [];
 			for (const value of results) {
@@ -712,6 +701,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		*/
 		#resetMenu() {
 			this.#activeItems = [];
+			this.#focusedItem = null;
 			_fr0st_query.default.empty(this.#menuNode);
 			if (this.node) _fr0st_query.default.removeAttribute(this.node, "aria-activedescendant");
 			if (this.#menuNode) _fr0st_query.default.setAttribute(this.#menuNode, { "aria-busy": false });
@@ -776,7 +766,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 			_fr0st_query.default.addClass(this.#menuNode, this.constructor.classes.show);
 			_fr0st_query.default.setStyle(this.#menuNode, { display: "" });
 			_fr0st_query.default.setAttribute(this.node, { "aria-expanded": true });
-			this.#focusItem(this.#getFocusedItem(), { scroll: true });
+			this.#focusItem(this.#focusedItem, { scroll: true });
 			window.requestAnimationFrame(() => {
 				if (this.node && this.#transition === transition) this.update();
 			});

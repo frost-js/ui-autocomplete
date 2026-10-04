@@ -153,6 +153,7 @@ var Autocomplete = class extends BaseComponent {
 	#activeItems = [];
 	#data = [];
 	#errorNode = null;
+	#focusedItem = null;
 	#inputAttributes = /* @__PURE__ */ new Map();
 	#inputEvent = null;
 	#loaderNode = null;
@@ -205,6 +206,7 @@ var Autocomplete = class extends BaseComponent {
 		this.#activeItems = null;
 		this.#data = null;
 		this.#errorNode = null;
+		this.#focusedItem = null;
 		this.#inputAttributes = null;
 		this.#inputEvent = null;
 		this.#loaderNode = null;
@@ -337,10 +339,9 @@ var Autocomplete = class extends BaseComponent {
 			].includes(event.key)) return;
 			const open = $.isConnected(this.#menuNode) && this.#transition?.direction !== "out";
 			if (event.key === "Enter") {
-				const focusedNode = this.#getFocusedItem();
-				if (open && focusedNode) {
+				if (open && this.#focusedItem) {
 					event.preventDefault();
-					this.#selectItem(focusedNode);
+					this.#selectItem(this.#focusedItem);
 				}
 				return;
 			}
@@ -357,15 +358,14 @@ var Autocomplete = class extends BaseComponent {
 				this.#show(event.key === "ArrowUp" ? "last" : "first");
 				return;
 			}
-			const focusedNode = this.#getFocusedItem();
-			if (!focusedNode) {
+			if (!this.#focusedItem) {
 				if (this.#activeItems.length) {
 					const focusNode = event.key === "ArrowUp" ? this.#activeItems.at(-1) : this.#activeItems[0];
 					this.#focusItem(focusNode, { scroll: true });
 				} else if (!this.#request) this.#load($.getValue(this.node) ?? "", event.key === "ArrowUp" ? "last" : "first");
 				return;
 			}
-			const currentIndex = this.#activeItems.indexOf(focusedNode);
+			const currentIndex = this.#activeItems.indexOf(this.#focusedItem);
 			const change = event.key === "ArrowUp" ? -1 : 1;
 			const focusNode = this.#activeItems[currentIndex + change];
 			if (focusNode) this.#focusItem(focusNode, { scroll: true });
@@ -398,13 +398,9 @@ var Autocomplete = class extends BaseComponent {
 	*/
 	#focusItem(item, { scroll = false } = {}) {
 		if (!item || !this.#activeItems.includes(item)) return;
-		const focusedNode = this.#getFocusedItem();
-		if (focusedNode && !$.isSame(focusedNode, item)) {
-			$.removeClass(focusedNode, this.constructor.classes.focus);
-			$.removeDataset(focusedNode, "uiFocus");
-		}
+		if (this.#focusedItem && !$.isSame(this.#focusedItem, item)) $.removeClass(this.#focusedItem, this.constructor.classes.focus);
+		this.#focusedItem = item;
 		$.addClass(item, this.constructor.classes.focus);
-		$.setDataset(item, { uiFocus: true });
 		if (this.node) {
 			const id = $.getAttribute(item, "id");
 			if (id) $.setAttribute(this.node, { "aria-activedescendant": id });
@@ -416,13 +412,6 @@ var Autocomplete = class extends BaseComponent {
 		const itemRect = $.rect(item, { offset: true });
 		if (itemRect.top < menuRect.top) $.setScrollY(this.#menuNode, menuScrollY + itemRect.top - menuRect.top);
 		else if (itemRect.bottom > menuRect.bottom) $.setScrollY(this.#menuNode, menuScrollY + itemRect.bottom - menuRect.bottom);
-	}
-	/**
-	* Gets the currently focused option.
-	* @returns {HTMLLIElement|null} The focused option, or `null`.
-	*/
-	#getFocusedItem() {
-		return this.#activeItems.find((item) => $.hasDataset(item, "uiFocus")) || null;
 	}
 	/**
 	* Gets sorted local results for a term.
@@ -604,7 +593,7 @@ var Autocomplete = class extends BaseComponent {
 	* @param {AutocompleteFocus} [options.focus='first'] The initial focus behavior.
 	*/
 	#renderResults(results, { append = false, focus = "first" } = {}) {
-		const focusedNode = append ? this.#getFocusedItem() : null;
+		const focusedNode = append ? this.#focusedItem : null;
 		if (!append) this.#resetMenu();
 		const newItems = [];
 		for (const value of results) {
@@ -680,6 +669,7 @@ var Autocomplete = class extends BaseComponent {
 	*/
 	#resetMenu() {
 		this.#activeItems = [];
+		this.#focusedItem = null;
 		$.empty(this.#menuNode);
 		if (this.node) $.removeAttribute(this.node, "aria-activedescendant");
 		if (this.#menuNode) $.setAttribute(this.#menuNode, { "aria-busy": false });
@@ -744,7 +734,7 @@ var Autocomplete = class extends BaseComponent {
 		$.addClass(this.#menuNode, this.constructor.classes.show);
 		$.setStyle(this.#menuNode, { display: "" });
 		$.setAttribute(this.node, { "aria-expanded": true });
-		this.#focusItem(this.#getFocusedItem(), { scroll: true });
+		this.#focusItem(this.#focusedItem, { scroll: true });
 		window.requestAnimationFrame(() => {
 			if (this.node && this.#transition === transition) this.update();
 		});

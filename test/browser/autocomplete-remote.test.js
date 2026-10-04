@@ -32,6 +32,33 @@ test.describe('Autocomplete remote results', () => {
             await expect(page.locator('.autocomplete-menu')).toHaveAttribute('aria-busy', 'false');
         });
 
+        test('does not suppress Enter while replacement results are loading', async ({ page }) => {
+            await page.evaluate(() => {
+                const input = $.findOne('#autocomplete');
+                $.focus(input);
+                UI.Autocomplete.init(input, {
+                    debounce: 0,
+                    getResults: ({ term }) => term ?
+                        new Promise(() => {}) :
+                        Promise.resolve({ results: ['One'] }),
+                    minSearch: 0,
+                }).show();
+            });
+
+            const input = page.locator('#autocomplete');
+            await expect(page.locator('.autocomplete-item')).toHaveText('One');
+            await expect(input).toHaveAttribute('aria-activedescendant', /.+/);
+            await input.fill('new');
+            await expect(page.locator('.autocomplete-menu')).toHaveAttribute('aria-busy', 'true');
+            await expect(input).not.toHaveAttribute('aria-activedescendant');
+
+            const allowed = await input.evaluate((node) => node.dispatchEvent(
+                new KeyboardEvent('keydown', { bubbles: true, cancelable: true, key: 'Enter' }),
+            ));
+            expect(allowed).toBe(true);
+            await expect(input).toHaveValue('new');
+        });
+
         test('closes after an empty response', async ({ page }) => {
             await page.evaluate(() => {
                 UI.Autocomplete.init($.findOne('#autocomplete'), {
@@ -263,7 +290,7 @@ test.describe('Autocomplete remote results', () => {
     });
 
     test.describe('pagination', () => {
-        test('loads paginated results when scrolling', async ({ page }) => {
+        test('loads paginated results and preserves focus when scrolling', async ({ page }) => {
             await page.evaluate(() => {
                 window.payloads = [];
                 const firstPage = Array.from({ length: 20 }, (_, index) => `First ${index}`);
@@ -280,18 +307,22 @@ test.describe('Autocomplete remote results', () => {
                 }).show();
             });
             await expect(page.locator('.autocomplete-item')).toHaveCount(20);
-            await page.evaluate(() => {
-                const focused = $.findOne('[data-ui-focus]');
-                $.removeDataset(focused, 'uiFocus');
-                $.removeClass(focused, UI.Autocomplete.classes.focus);
-            });
+            const input = page.locator('#autocomplete');
+            const focused = page.locator('.autocomplete-item').nth(1);
+            await input.focus();
+            await input.press('ArrowDown');
+            const focusedId = await focused.getAttribute('id');
+            await expect(input).toHaveAttribute('aria-activedescendant', focusedId);
             await page.locator('.autocomplete-menu').evaluate((menu) => {
                 $.setScrollY(menu, $.height(menu, { boxSize: $.SCROLL_BOX }));
                 $.triggerEvent(menu, 'scroll', { bubbles: false, cancelable: false });
             });
             await expect(page.locator('.autocomplete-item')).toHaveCount(21);
             await expect(page.locator('.autocomplete-item').last()).toHaveText('Second page');
-            await expect(page.locator('#autocomplete')).not.toHaveAttribute('aria-activedescendant');
+            await expect(focused).toHaveClass(/\bfocus\b/);
+            await expect(input).toHaveAttribute('aria-activedescendant', focusedId);
+            await input.press('Enter');
+            await expect(input).toHaveValue('First 1');
             expect(await page.evaluate(() => window.payloads)).toEqual([
                 { offset: 0, term: undefined },
                 { offset: 20, term: undefined },
