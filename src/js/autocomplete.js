@@ -520,7 +520,7 @@ export default class Autocomplete extends BaseComponent {
 
                     this.#focusItem(focusNode, { scroll: true });
                 } else if (!this.#request) {
-                    this.#load(this.node?.value ?? '', event.key === 'ArrowUp' ? 'last' : 'first');
+                    this.#load($.getValue(this.node) ?? '', event.key === 'ArrowUp' ? 'last' : 'first');
                 }
 
                 return;
@@ -794,7 +794,7 @@ export default class Autocomplete extends BaseComponent {
      * @returns {HTMLLIElement|null} The result option, or `null` if disposed while rendering.
      */
     #renderItem(value) {
-        const active = (this.node?.value ?? '') === value;
+        const active = ($.getValue(this.node) ?? '') === value;
         const item = $.create('li', {
             class: this.constructor.classes.item,
             attributes: {
@@ -1017,7 +1017,7 @@ export default class Autocomplete extends BaseComponent {
 
                 if (
                     this.#showMore &&
-                    this.#menuNode.scrollHeight <= this.#menuNode.clientHeight
+                    $.height(this.#menuNode, { boxSize: $.SCROLL_BOX }) <= $.height(this.#menuNode)
                 ) {
                     this.#scrollEvent();
                 }
@@ -1082,8 +1082,8 @@ export default class Autocomplete extends BaseComponent {
     #show(focus) {
         if (
             !this.node ||
-            this.node.disabled ||
-            this.node.readOnly ||
+            $.getProperty(this.node, 'disabled') ||
+            $.getProperty(this.node, 'readOnly') ||
             (
                 $.isConnected(this.#menuNode) &&
                 this.#transition?.direction !== 'out'

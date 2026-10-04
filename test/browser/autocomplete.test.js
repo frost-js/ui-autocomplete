@@ -530,7 +530,7 @@ test.describe('Autocomplete', () => {
             test('does not suppress the context menu', async ({ page }) => {
                 const allowed = await page.evaluate(() => {
                     const input = $.findOne('#autocomplete');
-                    input.focus();
+                    $.focus(input);
                     $.getData(input, 'autocomplete').show();
                     return $.findOne('.autocomplete-item').dispatchEvent(
                         new MouseEvent('contextmenu', { bubbles: true, cancelable: true }),
@@ -635,9 +635,9 @@ test.describe('Autocomplete', () => {
                 test('ignores queued input work after focus moves away', async ({ page }) => {
                     await page.evaluate(() => {
                         const input = $.findOne('#autocomplete');
-                        input.focus();
+                        $.focus(input);
                         $.setValue(input, 'o');
-                        input.dispatchEvent(new Event('input', { bubbles: true }));
+                        $.triggerEvent(input, 'input', { cancelable: false });
                         $.focus('#outside');
                     });
                     await page.clock.runFor(1);
@@ -715,7 +715,7 @@ test.describe('Autocomplete', () => {
         test('refreshes local results while the menu is open', async ({ page }) => {
             await page.evaluate(() => {
                 const input = $.findOne('#autocomplete');
-                input.focus();
+                $.focus(input);
                 UI.Autocomplete.init(input, {
                     data: ['One', 'Two'],
                     minSearch: 0,

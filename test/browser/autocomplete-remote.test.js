@@ -142,7 +142,7 @@ test.describe('Autocomplete remote results', () => {
             await page.evaluate(() => {
                 window.calls = 0;
                 const input = $.findOne('#autocomplete');
-                input.focus();
+                $.focus(input);
                 UI.Autocomplete.init(input, {
                     debounce: 0,
                     getResults() {
@@ -168,7 +168,7 @@ test.describe('Autocomplete remote results', () => {
             await page.evaluate(() => {
                 window.requests = [];
                 const input = $.findOne('#autocomplete');
-                input.focus();
+                $.focus(input);
                 UI.Autocomplete.init(input, {
                     debounce: 0,
                     getResults(options) {
@@ -220,7 +220,7 @@ test.describe('Autocomplete remote results', () => {
                 window.requests = [];
                 const input = $.findOne('#autocomplete');
                 $.setValue(input, 'ab');
-                input.focus();
+                $.focus(input);
                 UI.Autocomplete.init(input, {
                     debounce: 0,
                     getResults(options) {
@@ -286,8 +286,8 @@ test.describe('Autocomplete remote results', () => {
                 $.removeClass(focused, UI.Autocomplete.classes.focus);
             });
             await page.locator('.autocomplete-menu').evaluate((menu) => {
-                menu.scrollTop = menu.scrollHeight;
-                menu.dispatchEvent(new Event('scroll'));
+                $.setScrollY(menu, $.height(menu, { boxSize: $.SCROLL_BOX }));
+                $.triggerEvent(menu, 'scroll', { bubbles: false, cancelable: false });
             });
             await expect(page.locator('.autocomplete-item')).toHaveCount(21);
             await expect(page.locator('.autocomplete-item').last()).toHaveText('Second page');
@@ -303,7 +303,7 @@ test.describe('Autocomplete remote results', () => {
                 window.requests = [];
                 const input = $.findOne('#autocomplete');
                 $.setValue(input, 'a');
-                input.focus();
+                $.focus(input);
                 UI.Autocomplete.init(input, {
                     debounce: 0,
                     getResults(options) {
@@ -321,8 +321,8 @@ test.describe('Autocomplete remote results', () => {
             });
             await expect(page.locator('.autocomplete-item')).toHaveCount(20);
             await page.locator('.autocomplete-menu').evaluate((menu) => {
-                menu.scrollTop = menu.scrollHeight;
-                menu.dispatchEvent(new Event('scroll'));
+                $.setScrollY(menu, $.height(menu, { boxSize: $.SCROLL_BOX }));
+                $.triggerEvent(menu, 'scroll', { bubbles: false, cancelable: false });
             });
             await expect.poll(() => page.evaluate(() => window.requests.length)).toBe(2);
             await page.locator('#autocomplete').fill('b');
@@ -358,8 +358,8 @@ test.describe('Autocomplete remote results', () => {
                 await page.clock.runFor(1);
                 await expect(page.locator('.autocomplete-item')).toHaveCount(20);
                 await page.locator('.autocomplete-menu').evaluate((menu) => {
-                    menu.scrollTop = 0;
-                    menu.dispatchEvent(new Event('scroll'));
+                    $.setScrollY(menu, 0);
+                    $.triggerEvent(menu, 'scroll', { bubbles: false, cancelable: false });
                 });
                 await page.clock.runFor(350);
 
@@ -387,11 +387,13 @@ test.describe('Autocomplete remote results', () => {
                 await expect(page.locator('.autocomplete-item')).toHaveCount(20);
                 const menu = page.locator('.autocomplete-menu');
                 await menu.evaluate((node) => {
-                    node.scrollTop = node.scrollHeight;
-                    node.dispatchEvent(new Event('scroll'));
+                    $.setScrollY(node, $.height(node, { boxSize: $.SCROLL_BOX }));
+                    $.triggerEvent(node, 'scroll', { bubbles: false, cancelable: false });
                 });
                 await page.clock.runFor(350);
-                await menu.evaluate((node) => node.dispatchEvent(new Event('scroll')));
+                await menu.evaluate((node) => {
+                    $.triggerEvent(node, 'scroll', { bubbles: false, cancelable: false });
+                });
                 await page.clock.runFor(350);
 
                 expect(await page.evaluate(() => window.calls)).toBe(2);
@@ -407,7 +409,7 @@ test.describe('Autocomplete remote results', () => {
             await page.evaluate(() => {
                 window.terms = [];
                 const input = $.findOne('#autocomplete');
-                input.focus();
+                $.focus(input);
                 UI.Autocomplete.init(input, {
                     debounce: 120,
                     getResults(options) {

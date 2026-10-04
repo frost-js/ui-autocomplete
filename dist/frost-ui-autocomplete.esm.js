@@ -360,7 +360,7 @@ var Autocomplete = class extends BaseComponent {
 				if (this.#activeItems.length) {
 					const focusNode = event.key === "ArrowUp" ? this.#activeItems.at(-1) : this.#activeItems[0];
 					this.#focusItem(focusNode, { scroll: true });
-				} else if (!this.#request) this.#load(this.node?.value ?? "", event.key === "ArrowUp" ? "last" : "first");
+				} else if (!this.#request) this.#load($.getValue(this.node) ?? "", event.key === "ArrowUp" ? "last" : "first");
 				return;
 			}
 			const currentIndex = this.#activeItems.indexOf(focusedNode);
@@ -549,7 +549,7 @@ var Autocomplete = class extends BaseComponent {
 	* @returns {HTMLLIElement|null} The result option, or `null` if disposed while rendering.
 	*/
 	#renderItem(value) {
-		const active = (this.node?.value ?? "") === value;
+		const active = ($.getValue(this.node) ?? "") === value;
 		const item = $.create("li", {
 			class: this.constructor.classes.item,
 			attributes: {
@@ -670,7 +670,7 @@ var Autocomplete = class extends BaseComponent {
 			this.#request = null;
 			if (this.#menuNode) $.setAttribute(this.#menuNode, { "aria-busy": false });
 			this.update();
-			if (this.#showMore && this.#menuNode.scrollHeight <= this.#menuNode.clientHeight) this.#scrollEvent();
+			if (this.#showMore && $.height(this.#menuNode, { boxSize: $.SCROLL_BOX }) <= $.height(this.#menuNode)) this.#scrollEvent();
 		});
 	}
 	/**
@@ -713,7 +713,7 @@ var Autocomplete = class extends BaseComponent {
 	* @param {AutocompleteFocus} focus The initial focus behavior.
 	*/
 	#show(focus) {
-		if (!this.node || this.node.disabled || this.node.readOnly || $.isConnected(this.#menuNode) && this.#transition?.direction !== "out") return;
+		if (!this.node || $.getProperty(this.node, "disabled") || $.getProperty(this.node, "readOnly") || $.isConnected(this.#menuNode) && this.#transition?.direction !== "out") return;
 		const term = $.getValue(this.node);
 		if (!this.#meetsMinimumSearch(term)) {
 			this.#cancelRequest();

@@ -392,7 +392,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 					if (this.#activeItems.length) {
 						const focusNode = event.key === "ArrowUp" ? this.#activeItems.at(-1) : this.#activeItems[0];
 						this.#focusItem(focusNode, { scroll: true });
-					} else if (!this.#request) this.#load(this.node?.value ?? "", event.key === "ArrowUp" ? "last" : "first");
+					} else if (!this.#request) this.#load(_fr0st_query.default.getValue(this.node) ?? "", event.key === "ArrowUp" ? "last" : "first");
 					return;
 				}
 				const currentIndex = this.#activeItems.indexOf(focusedNode);
@@ -581,7 +581,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		* @returns {HTMLLIElement|null} The result option, or `null` if disposed while rendering.
 		*/
 		#renderItem(value) {
-			const active = (this.node?.value ?? "") === value;
+			const active = (_fr0st_query.default.getValue(this.node) ?? "") === value;
 			const item = _fr0st_query.default.create("li", {
 				class: this.constructor.classes.item,
 				attributes: {
@@ -702,7 +702,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 				this.#request = null;
 				if (this.#menuNode) _fr0st_query.default.setAttribute(this.#menuNode, { "aria-busy": false });
 				this.update();
-				if (this.#showMore && this.#menuNode.scrollHeight <= this.#menuNode.clientHeight) this.#scrollEvent();
+				if (this.#showMore && _fr0st_query.default.height(this.#menuNode, { boxSize: _fr0st_query.default.SCROLL_BOX }) <= _fr0st_query.default.height(this.#menuNode)) this.#scrollEvent();
 			});
 		}
 		/**
@@ -745,7 +745,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		* @param {AutocompleteFocus} focus The initial focus behavior.
 		*/
 		#show(focus) {
-			if (!this.node || this.node.disabled || this.node.readOnly || _fr0st_query.default.isConnected(this.#menuNode) && this.#transition?.direction !== "out") return;
+			if (!this.node || _fr0st_query.default.getProperty(this.node, "disabled") || _fr0st_query.default.getProperty(this.node, "readOnly") || _fr0st_query.default.isConnected(this.#menuNode) && this.#transition?.direction !== "out") return;
 			const term = _fr0st_query.default.getValue(this.node);
 			if (!this.#meetsMinimumSearch(term)) {
 				this.#cancelRequest();
