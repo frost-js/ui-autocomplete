@@ -178,8 +178,13 @@ export default class Autocomplete extends BaseComponent {
      * Creates an Autocomplete.
      * @param {HTMLInputElement} node The text input node.
      * @param {AutocompleteOptions} [options] The Autocomplete options.
+     * @throws {TypeError} When the node is not an input element.
      */
     constructor(node, options) {
+        if (!$.is(node, 'input')) {
+            throw new TypeError('Autocomplete must be created on an input element.');
+        }
+
         super(node, options);
 
         try {

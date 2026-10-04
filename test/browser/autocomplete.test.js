@@ -19,6 +19,28 @@ test.describe('Autocomplete', () => {
             });
         }
 
+        for (const tag of ['div', 'select', 'textarea']) {
+            for (const { name, init } of [
+                { name: 'constructor', init: () => new UI.Autocomplete($.findOne('#invalid')) },
+                { name: 'class', init: () => UI.Autocomplete.init($.findOne('#invalid')) },
+                { name: 'QuerySet', init: () => $('#invalid').autocomplete() },
+            ]) {
+                test(`rejects ${tag} elements without side effects (${name})`, async ({ page }) => {
+                    const markup = await page.evaluate((tag) => {
+                        $.setHtml(document.body, `<${tag} id="invalid" class="existing" tabindex="7"></${tag}>`);
+                        return $.getHtml(document.body);
+                    }, tag);
+
+                    await expect(page.evaluate(init)).rejects.toThrow(
+                        'Autocomplete must be created on an input element.',
+                    );
+
+                    expect(await page.evaluate(() => $.hasData('#invalid', 'autocomplete'))).toBe(false);
+                    expect(await page.evaluate(() => $.getHtml(document.body))).toBe(markup);
+                });
+            }
+        }
+
         test('creates multiple Autocompletes and returns the first (query)', async ({ page }) => {
             expect(await page.evaluate(() => {
                 const first = $('input').autocomplete();
