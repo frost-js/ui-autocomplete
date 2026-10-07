@@ -201,7 +201,6 @@ var Autocomplete = class extends BaseComponent {
 			this.#popper.dispose();
 			this.#popper = null;
 		}
-		$.removeEvent(this.node, "blur.ui.autocomplete input.ui.autocomplete keydown.ui.autocomplete");
 		$.remove(this.#menuNode);
 		for (const [attribute, value] of this.#inputAttributes) if (value === null) $.removeAttribute(this.node, attribute);
 		else $.setAttribute(this.node, attribute, value);
@@ -335,7 +334,7 @@ var Autocomplete = class extends BaseComponent {
 			this.#selectItem(event.currentTarget);
 		});
 		$.addEventDelegate(this.#menuNode, "mouseover.ui.autocomplete", "[data-ui-action=\"select\"]", (event) => this.#focusItem(event.currentTarget));
-		$.addEvent(this.node, "blur.ui.autocomplete", () => {
+		this.listen(this.node, "blur.ui.autocomplete", () => {
 			this.hide();
 		});
 		this.#inputHandler = $._debounce(() => {
@@ -346,8 +345,8 @@ var Autocomplete = class extends BaseComponent {
 			}
 			if (!this.#load($.getValue(this.node), "first")) this.hide();
 		});
-		$.addEvent(this.node, "input.ui.autocomplete", this.#inputHandler);
-		$.addEvent(this.node, "keydown.ui.autocomplete", (event) => {
+		this.listen(this.node, "input.ui.autocomplete", this.#inputHandler);
+		this.listen(this.node, "keydown.ui.autocomplete", (event) => {
 			if (!this.#isEditable() || event.isComposing || ![
 				"ArrowDown",
 				"ArrowUp",

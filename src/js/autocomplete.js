@@ -233,10 +233,6 @@ export default class Autocomplete extends BaseComponent {
             this.#popper = null;
         }
 
-        $.removeEvent(
-            this.node,
-            'blur.ui.autocomplete input.ui.autocomplete keydown.ui.autocomplete',
-        );
         $.remove(this.#menuNode);
 
         for (const [attribute, value] of this.#inputAttributes) {
@@ -471,7 +467,7 @@ export default class Autocomplete extends BaseComponent {
             (event) => this.#focusItem(event.currentTarget),
         );
 
-        $.addEvent(this.node, 'blur.ui.autocomplete', () => {
+        this.listen(this.node, 'blur.ui.autocomplete', () => {
             this.hide();
         });
 
@@ -496,9 +492,9 @@ export default class Autocomplete extends BaseComponent {
             }
         });
 
-        $.addEvent(this.node, 'input.ui.autocomplete', this.#inputHandler);
+        this.listen(this.node, 'input.ui.autocomplete', this.#inputHandler);
 
-        $.addEvent(this.node, 'keydown.ui.autocomplete', (event) => {
+        this.listen(this.node, 'keydown.ui.autocomplete', (event) => {
             if (
                 !this.#isEditable() ||
                 event.isComposing ||

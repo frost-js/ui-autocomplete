@@ -233,7 +233,6 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 				this.#popper.dispose();
 				this.#popper = null;
 			}
-			_fr0st_query.default.removeEvent(this.node, "blur.ui.autocomplete input.ui.autocomplete keydown.ui.autocomplete");
 			_fr0st_query.default.remove(this.#menuNode);
 			for (const [attribute, value] of this.#inputAttributes) if (value === null) _fr0st_query.default.removeAttribute(this.node, attribute);
 			else _fr0st_query.default.setAttribute(this.node, attribute, value);
@@ -367,7 +366,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 				this.#selectItem(event.currentTarget);
 			});
 			_fr0st_query.default.addEventDelegate(this.#menuNode, "mouseover.ui.autocomplete", "[data-ui-action=\"select\"]", (event) => this.#focusItem(event.currentTarget));
-			_fr0st_query.default.addEvent(this.node, "blur.ui.autocomplete", () => {
+			this.listen(this.node, "blur.ui.autocomplete", () => {
 				this.hide();
 			});
 			this.#inputHandler = _fr0st_query.default._debounce(() => {
@@ -378,8 +377,8 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 				}
 				if (!this.#load(_fr0st_query.default.getValue(this.node), "first")) this.hide();
 			});
-			_fr0st_query.default.addEvent(this.node, "input.ui.autocomplete", this.#inputHandler);
-			_fr0st_query.default.addEvent(this.node, "keydown.ui.autocomplete", (event) => {
+			this.listen(this.node, "input.ui.autocomplete", this.#inputHandler);
+			this.listen(this.node, "keydown.ui.autocomplete", (event) => {
 				if (!this.#isEditable() || event.isComposing || ![
 					"ArrowDown",
 					"ArrowUp",

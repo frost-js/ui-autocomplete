@@ -216,6 +216,25 @@ test.describe('Autocomplete', () => {
             });
         }
 
+        test('preserves consumer input listeners registered before and after initialization', async ({ page }) => {
+            const events = await page.evaluate(() => {
+                const node = $.findOne('#autocomplete');
+                const events = [];
+                $.addEvent(node, 'input.ui.autocomplete', (event) => events.push(`before:${event.type}`));
+
+                const instance = UI.Autocomplete.init(node);
+                $.addEvent(node, 'input.ui.autocomplete', (event) => events.push(`after:${event.type}`));
+
+                instance.dispose();
+                instance.dispose();
+                $.triggerEvent(node, 'input.ui.autocomplete');
+
+                return events;
+            });
+
+            expect(events).toEqual(['before:input', 'after:input']);
+        });
+
         test('restores absent ARIA attributes and supports repeated disposal', async ({ page }) => {
             await page.evaluate(() => {
                 const autocomplete = UI.Autocomplete.init($.findOne('#autocomplete'));
