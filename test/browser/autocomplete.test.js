@@ -216,25 +216,6 @@ test.describe('Autocomplete', () => {
             });
         }
 
-        test('preserves consumer input listeners registered before and after initialization', async ({ page }) => {
-            const events = await page.evaluate(() => {
-                const node = $.findOne('#autocomplete');
-                const events = [];
-                $.addEvent(node, 'input.ui.autocomplete', (event) => events.push(`before:${event.type}`));
-
-                const instance = UI.Autocomplete.init(node);
-                $.addEvent(node, 'input.ui.autocomplete', (event) => events.push(`after:${event.type}`));
-
-                instance.dispose();
-                instance.dispose();
-                $.triggerEvent(node, 'input.ui.autocomplete');
-
-                return events;
-            });
-
-            expect(events).toEqual(['before:input', 'after:input']);
-        });
-
         test('restores absent ARIA attributes and supports repeated disposal', async ({ page }) => {
             await page.evaluate(() => {
                 const autocomplete = UI.Autocomplete.init($.findOne('#autocomplete'));
@@ -255,20 +236,23 @@ test.describe('Autocomplete', () => {
             }
         });
 
-        test('disposes when the original input is removed', async ({ page }) => {
-            expect(await page.evaluate(() => {
-                const input = $.findOne('#autocomplete');
-                const autocomplete = UI.Autocomplete.init(input, {
-                    data: ['One'],
-                    minSearch: 0,
-                });
-                autocomplete.show();
-                $.remove(input);
-                return { node: autocomplete.node, options: autocomplete.options };
-            })).toEqual({ node: null, options: null });
+        test('preserves consumer input listeners registered before and after initialization', async ({ page }) => {
+            const events = await page.evaluate(() => {
+                const node = $.findOne('#autocomplete');
+                const events = [];
+                $.addEvent(node, 'input.ui.autocomplete', (event) => events.push(`before:${event.type}`));
 
-            await expect(page.locator('#autocomplete')).toHaveCount(0);
-            await expect(page.locator('.autocomplete-menu')).toHaveCount(0);
+                const instance = UI.Autocomplete.init(node);
+                $.addEvent(node, 'input.ui.autocomplete', (event) => events.push(`after:${event.type}`));
+
+                instance.dispose();
+                instance.dispose();
+                $.triggerEvent(node, 'input.ui.autocomplete');
+
+                return events;
+            });
+
+            expect(events).toEqual(['before:input', 'after:input']);
         });
 
         test('can be reinitialized after disposal', async ({ page }) => {
@@ -283,6 +267,22 @@ test.describe('Autocomplete', () => {
             });
 
             await expect(page.locator('.autocomplete-item')).toHaveText('Reinitialized');
+        });
+
+        test('disposes when the original input is removed', async ({ page }) => {
+            expect(await page.evaluate(() => {
+                const input = $.findOne('#autocomplete');
+                const autocomplete = UI.Autocomplete.init(input, {
+                    data: ['One'],
+                    minSearch: 0,
+                });
+                autocomplete.show();
+                $.remove(input);
+                return { node: autocomplete.node, options: autocomplete.options };
+            })).toEqual({ node: null, options: null });
+
+            await expect(page.locator('#autocomplete')).toHaveCount(0);
+            await expect(page.locator('.autocomplete-menu')).toHaveCount(0);
         });
     });
 
