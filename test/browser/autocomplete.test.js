@@ -41,7 +41,7 @@ test.describe('Autocomplete', () => {
             }
         }
 
-        test('creates multiple Autocompletes and returns the first (query)', async ({ page }) => {
+        test('creates multiple Autocompletes and returns the first (QuerySet)', async ({ page }) => {
             expect(await page.evaluate(() => {
                 const first = $('input').autocomplete();
                 return {
@@ -331,6 +331,27 @@ test.describe('Autocomplete', () => {
         });
     });
 
+    test.describe('#toggle', () => {
+        for (const { name, toggle } of [
+            { name: 'class', toggle: () => window.autocomplete.toggle() },
+            { name: 'QuerySet', toggle: () => $('#autocomplete').autocomplete('toggle') },
+        ]) {
+            test(`toggles the menu (${name})`, async ({ page }) => {
+                await page.evaluate(() => {
+                    window.autocomplete = UI.Autocomplete.init($.findOne('#autocomplete'), {
+                        data: ['One'],
+                        minSearch: 0,
+                    });
+                });
+                await page.evaluate(toggle);
+                await expect(page.locator('.autocomplete-menu')).toBeVisible();
+
+                await page.evaluate(toggle);
+                await expect(page.locator('.autocomplete-menu')).toHaveCount(0);
+            });
+        }
+    });
+
     test.describe('native input state', () => {
         test('honors disabled fieldsets and their first legend exemption', async ({ page }) => {
             await page.evaluate(() => {
@@ -418,27 +439,6 @@ test.describe('Autocomplete', () => {
             await expect(page.locator('.autocomplete-item')).toHaveText('Two');
             await expect(page.locator('#autocomplete')).toHaveAttribute('aria-expanded', 'true');
         });
-    });
-
-    test.describe('#toggle', () => {
-        for (const { name, toggle } of [
-            { name: 'class', toggle: () => window.autocomplete.toggle() },
-            { name: 'QuerySet', toggle: () => $('#autocomplete').autocomplete('toggle') },
-        ]) {
-            test(`toggles the menu (${name})`, async ({ page }) => {
-                await page.evaluate(() => {
-                    window.autocomplete = UI.Autocomplete.init($.findOne('#autocomplete'), {
-                        data: ['One'],
-                        minSearch: 0,
-                    });
-                });
-                await page.evaluate(toggle);
-                await expect(page.locator('.autocomplete-menu')).toBeVisible();
-
-                await page.evaluate(toggle);
-                await expect(page.locator('.autocomplete-menu')).toHaveCount(0);
-            });
-        }
     });
 
     test.describe('input attributes and accessibility', () => {
@@ -913,7 +913,7 @@ test.describe('Autocomplete', () => {
         });
     });
 
-    test.describe('minSearch', () => {
+    test.describe('minSearch option', () => {
         test('waits for minSearch and closes after deletion below it', async ({ page }) => {
             await page.evaluate(() => {
                 UI.Autocomplete.init($.findOne('#autocomplete'), {

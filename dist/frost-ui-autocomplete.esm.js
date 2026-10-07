@@ -155,14 +155,14 @@ var Autocomplete = class extends BaseComponent {
 	#errorNode = null;
 	#focusedItem = null;
 	#inputAttributes = /* @__PURE__ */ new Map();
-	#inputEvent = null;
+	#inputHandler = null;
 	#loaderNode = null;
 	#loadResults = null;
 	#menuNode = null;
 	#observer = null;
 	#popper = null;
 	#request = null;
-	#scrollEvent = null;
+	#scrollHandler = null;
 	#showMore = false;
 	#term = "";
 	#transition = null;
@@ -195,8 +195,8 @@ var Autocomplete = class extends BaseComponent {
 		this.#transition = null;
 		this.#cancelRequest();
 		if (!this.node) return;
-		this.#inputEvent?.cancel();
-		this.#scrollEvent?.cancel();
+		this.#inputHandler?.cancel();
+		this.#scrollHandler?.cancel();
 		if (this.#popper) {
 			this.#popper.dispose();
 			this.#popper = null;
@@ -210,20 +210,20 @@ var Autocomplete = class extends BaseComponent {
 		this.#errorNode = null;
 		this.#focusedItem = null;
 		this.#inputAttributes = null;
-		this.#inputEvent = null;
+		this.#inputHandler = null;
 		this.#loaderNode = null;
 		this.#loadResults = null;
 		this.#menuNode = null;
 		this.#observer = null;
-		this.#scrollEvent = null;
+		this.#scrollHandler = null;
 		super.dispose();
 	}
 	/**
 	* Hides the Autocomplete menu.
 	*/
 	hide() {
-		this.#inputEvent?.cancel();
-		this.#scrollEvent?.cancel();
+		this.#inputHandler?.cancel();
+		this.#scrollHandler?.cancel();
 		if (!this.node || !$.isConnected(this.#menuNode) || this.#transition?.direction === "out") return;
 		if (!$.triggerOne(this.node, "hide.ui.autocomplete") || !this.node) return;
 		this.#cancelRequest();
@@ -338,7 +338,7 @@ var Autocomplete = class extends BaseComponent {
 		$.addEvent(this.node, "blur.ui.autocomplete", () => {
 			this.hide();
 		});
-		this.#inputEvent = $._debounce(() => {
+		this.#inputHandler = $._debounce(() => {
 			if (!this.#isEditable() || !$.is(this.node, ":focus")) return;
 			if (!$.isConnected(this.#menuNode) || this.#transition?.direction === "out") {
 				this.#show("first");
@@ -346,7 +346,7 @@ var Autocomplete = class extends BaseComponent {
 			}
 			if (!this.#load($.getValue(this.node), "first")) this.hide();
 		});
-		$.addEvent(this.node, "input.ui.autocomplete", this.#inputEvent);
+		$.addEvent(this.node, "input.ui.autocomplete", this.#inputHandler);
 		$.addEvent(this.node, "keydown.ui.autocomplete", (event) => {
 			if (!this.#isEditable() || event.isComposing || ![
 				"ArrowDown",
@@ -388,7 +388,7 @@ var Autocomplete = class extends BaseComponent {
 			if (focusNode) this.#focusItem(focusNode, { scroll: true });
 		});
 		if (this.#hasRemoteResults()) {
-			this.#scrollEvent = $._throttle(() => {
+			this.#scrollHandler = $._throttle(() => {
 				if (!this.node || !$.isConnected(this.#menuNode) || this.#transition?.direction === "out" || this.#request || !this.#showMore) return;
 				const height = $.height(this.#menuNode);
 				const scrollHeight = $.height(this.#menuNode, { boxSize: $.SCROLL_BOX });
@@ -404,7 +404,7 @@ var Autocomplete = class extends BaseComponent {
 					term
 				});
 			}, 250, { leading: false });
-			$.addEvent(this.#menuNode, "scroll.ui.autocomplete", this.#scrollEvent);
+			$.addEvent(this.#menuNode, "scroll.ui.autocomplete", this.#scrollHandler);
 		}
 	}
 	/**
@@ -470,7 +470,7 @@ var Autocomplete = class extends BaseComponent {
 	* @returns {boolean} Whether the input can be edited.
 	*/
 	#isEditable() {
-		return Boolean(this.node && !$.is(this.node, ":disabled") && !$.getProperty(this.node, "readOnly"));
+		return Boolean(this.node) && !$.is(this.node, ":disabled") && !$.getProperty(this.node, "readOnly");
 	}
 	/**
 	* Loads results for a term.
@@ -686,7 +686,7 @@ var Autocomplete = class extends BaseComponent {
 			this.#request = null;
 			if (this.#menuNode) $.setAttribute(this.#menuNode, { "aria-busy": false });
 			this.update();
-			if (this.#showMore && $.height(this.#menuNode, { boxSize: $.SCROLL_BOX }) <= $.height(this.#menuNode)) this.#scrollEvent();
+			if (this.#showMore && $.height(this.#menuNode, { boxSize: $.SCROLL_BOX }) <= $.height(this.#menuNode)) this.#scrollHandler();
 		});
 	}
 	/**

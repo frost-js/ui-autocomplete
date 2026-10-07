@@ -187,14 +187,14 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		#errorNode = null;
 		#focusedItem = null;
 		#inputAttributes = /* @__PURE__ */ new Map();
-		#inputEvent = null;
+		#inputHandler = null;
 		#loaderNode = null;
 		#loadResults = null;
 		#menuNode = null;
 		#observer = null;
 		#popper = null;
 		#request = null;
-		#scrollEvent = null;
+		#scrollHandler = null;
 		#showMore = false;
 		#term = "";
 		#transition = null;
@@ -227,8 +227,8 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 			this.#transition = null;
 			this.#cancelRequest();
 			if (!this.node) return;
-			this.#inputEvent?.cancel();
-			this.#scrollEvent?.cancel();
+			this.#inputHandler?.cancel();
+			this.#scrollHandler?.cancel();
 			if (this.#popper) {
 				this.#popper.dispose();
 				this.#popper = null;
@@ -242,20 +242,20 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 			this.#errorNode = null;
 			this.#focusedItem = null;
 			this.#inputAttributes = null;
-			this.#inputEvent = null;
+			this.#inputHandler = null;
 			this.#loaderNode = null;
 			this.#loadResults = null;
 			this.#menuNode = null;
 			this.#observer = null;
-			this.#scrollEvent = null;
+			this.#scrollHandler = null;
 			super.dispose();
 		}
 		/**
 		* Hides the Autocomplete menu.
 		*/
 		hide() {
-			this.#inputEvent?.cancel();
-			this.#scrollEvent?.cancel();
+			this.#inputHandler?.cancel();
+			this.#scrollHandler?.cancel();
 			if (!this.node || !_fr0st_query.default.isConnected(this.#menuNode) || this.#transition?.direction === "out") return;
 			if (!_fr0st_query.default.triggerOne(this.node, "hide.ui.autocomplete") || !this.node) return;
 			this.#cancelRequest();
@@ -370,7 +370,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 			_fr0st_query.default.addEvent(this.node, "blur.ui.autocomplete", () => {
 				this.hide();
 			});
-			this.#inputEvent = _fr0st_query.default._debounce(() => {
+			this.#inputHandler = _fr0st_query.default._debounce(() => {
 				if (!this.#isEditable() || !_fr0st_query.default.is(this.node, ":focus")) return;
 				if (!_fr0st_query.default.isConnected(this.#menuNode) || this.#transition?.direction === "out") {
 					this.#show("first");
@@ -378,7 +378,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 				}
 				if (!this.#load(_fr0st_query.default.getValue(this.node), "first")) this.hide();
 			});
-			_fr0st_query.default.addEvent(this.node, "input.ui.autocomplete", this.#inputEvent);
+			_fr0st_query.default.addEvent(this.node, "input.ui.autocomplete", this.#inputHandler);
 			_fr0st_query.default.addEvent(this.node, "keydown.ui.autocomplete", (event) => {
 				if (!this.#isEditable() || event.isComposing || ![
 					"ArrowDown",
@@ -420,7 +420,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 				if (focusNode) this.#focusItem(focusNode, { scroll: true });
 			});
 			if (this.#hasRemoteResults()) {
-				this.#scrollEvent = _fr0st_query.default._throttle(() => {
+				this.#scrollHandler = _fr0st_query.default._throttle(() => {
 					if (!this.node || !_fr0st_query.default.isConnected(this.#menuNode) || this.#transition?.direction === "out" || this.#request || !this.#showMore) return;
 					const height = _fr0st_query.default.height(this.#menuNode);
 					const scrollHeight = _fr0st_query.default.height(this.#menuNode, { boxSize: _fr0st_query.default.SCROLL_BOX });
@@ -436,7 +436,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 						term
 					});
 				}, 250, { leading: false });
-				_fr0st_query.default.addEvent(this.#menuNode, "scroll.ui.autocomplete", this.#scrollEvent);
+				_fr0st_query.default.addEvent(this.#menuNode, "scroll.ui.autocomplete", this.#scrollHandler);
 			}
 		}
 		/**
@@ -502,7 +502,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		* @returns {boolean} Whether the input can be edited.
 		*/
 		#isEditable() {
-			return Boolean(this.node && !_fr0st_query.default.is(this.node, ":disabled") && !_fr0st_query.default.getProperty(this.node, "readOnly"));
+			return Boolean(this.node) && !_fr0st_query.default.is(this.node, ":disabled") && !_fr0st_query.default.getProperty(this.node, "readOnly");
 		}
 		/**
 		* Loads results for a term.
@@ -718,7 +718,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 				this.#request = null;
 				if (this.#menuNode) _fr0st_query.default.setAttribute(this.#menuNode, { "aria-busy": false });
 				this.update();
-				if (this.#showMore && _fr0st_query.default.height(this.#menuNode, { boxSize: _fr0st_query.default.SCROLL_BOX }) <= _fr0st_query.default.height(this.#menuNode)) this.#scrollEvent();
+				if (this.#showMore && _fr0st_query.default.height(this.#menuNode, { boxSize: _fr0st_query.default.SCROLL_BOX }) <= _fr0st_query.default.height(this.#menuNode)) this.#scrollHandler();
 			});
 		}
 		/**

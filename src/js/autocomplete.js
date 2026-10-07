@@ -164,14 +164,14 @@ export default class Autocomplete extends BaseComponent {
     #errorNode = null;
     #focusedItem = null;
     #inputAttributes = new Map();
-    #inputEvent = null;
+    #inputHandler = null;
     #loaderNode = null;
     #loadResults = null;
     #menuNode = null;
     #observer = null;
     #popper = null;
     #request = null;
-    #scrollEvent = null;
+    #scrollHandler = null;
     #showMore = false;
     #term = '';
     #transition = null;
@@ -225,8 +225,8 @@ export default class Autocomplete extends BaseComponent {
             return;
         }
 
-        this.#inputEvent?.cancel();
-        this.#scrollEvent?.cancel();
+        this.#inputHandler?.cancel();
+        this.#scrollHandler?.cancel();
 
         if (this.#popper) {
             this.#popper.dispose();
@@ -252,12 +252,12 @@ export default class Autocomplete extends BaseComponent {
         this.#errorNode = null;
         this.#focusedItem = null;
         this.#inputAttributes = null;
-        this.#inputEvent = null;
+        this.#inputHandler = null;
         this.#loaderNode = null;
         this.#loadResults = null;
         this.#menuNode = null;
         this.#observer = null;
-        this.#scrollEvent = null;
+        this.#scrollHandler = null;
 
         super.dispose();
     }
@@ -266,8 +266,8 @@ export default class Autocomplete extends BaseComponent {
      * Hides the Autocomplete menu.
      */
     hide() {
-        this.#inputEvent?.cancel();
-        this.#scrollEvent?.cancel();
+        this.#inputHandler?.cancel();
+        this.#scrollHandler?.cancel();
 
         if (
             !this.node ||
@@ -475,7 +475,7 @@ export default class Autocomplete extends BaseComponent {
             this.hide();
         });
 
-        this.#inputEvent = $._debounce(() => {
+        this.#inputHandler = $._debounce(() => {
             if (
                 !this.#isEditable() ||
                 !$.is(this.node, ':focus')
@@ -496,7 +496,7 @@ export default class Autocomplete extends BaseComponent {
             }
         });
 
-        $.addEvent(this.node, 'input.ui.autocomplete', this.#inputEvent);
+        $.addEvent(this.node, 'input.ui.autocomplete', this.#inputHandler);
 
         $.addEvent(this.node, 'keydown.ui.autocomplete', (event) => {
             if (
@@ -560,7 +560,7 @@ export default class Autocomplete extends BaseComponent {
         });
 
         if (this.#hasRemoteResults()) {
-            this.#scrollEvent = $._throttle(() => {
+            this.#scrollHandler = $._throttle(() => {
                 if (
                     !this.node ||
                     !$.isConnected(this.#menuNode) ||
@@ -593,7 +593,7 @@ export default class Autocomplete extends BaseComponent {
                 });
             }, 250, { leading: false });
 
-            $.addEvent(this.#menuNode, 'scroll.ui.autocomplete', this.#scrollEvent);
+            $.addEvent(this.#menuNode, 'scroll.ui.autocomplete', this.#scrollHandler);
         }
     }
 
@@ -691,9 +691,9 @@ export default class Autocomplete extends BaseComponent {
      * @returns {boolean} Whether the input can be edited.
      */
     #isEditable() {
-        return Boolean(this.node &&
+        return Boolean(this.node) &&
             !$.is(this.node, ':disabled') &&
-            !$.getProperty(this.node, 'readOnly'));
+            !$.getProperty(this.node, 'readOnly');
     }
 
     /**
@@ -1046,7 +1046,7 @@ export default class Autocomplete extends BaseComponent {
                     this.#showMore &&
                     $.height(this.#menuNode, { boxSize: $.SCROLL_BOX }) <= $.height(this.#menuNode)
                 ) {
-                    this.#scrollEvent();
+                    this.#scrollHandler();
                 }
             });
     }
