@@ -205,7 +205,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		* @throws {TypeError} When the node is not an input element.
 		*/
 		constructor(node, options) {
-			if (!_fr0st_query.default.is(node, "input")) throw new TypeError("Autocomplete must be created on an input element.");
+			if (!_fr0st_query.default._isElement(node) || !_fr0st_query.default.is(node, "input")) throw new TypeError("Autocomplete must be created on an input element.");
 			super(node, options);
 			try {
 				if (Array.isArray(this.options.data)) this.#data = this.options.data.filter((value) => typeof value === "string");

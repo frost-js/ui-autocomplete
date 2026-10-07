@@ -19,6 +19,52 @@ test.describe('Autocomplete', () => {
             });
         }
 
+        test('rejects non-element arguments without disturbing an existing instance', async ({ page }) => {
+            const state = await page.evaluate(() => {
+                const node = $.findOne('#autocomplete');
+                const instance = UI.Autocomplete.init(node);
+                const html = $.getHtml(document.body);
+                const errors = [];
+
+                for (const [name, argument] of [
+                    ['null', null],
+                    ['undefined', undefined],
+                    ['selector', '#autocomplete'],
+                    ['malformed selector', '['],
+                    ['array', [node]],
+                    ['QuerySet', $('#autocomplete')],
+                    ['document', document],
+                    ['text node', document.createTextNode('text')],
+                ]) {
+                    for (const [method, init] of [
+                        ['constructor', (node) => new UI.Autocomplete(node)],
+                        ['init', (node) => UI.Autocomplete.init(node)],
+                    ]) {
+                        let message = null;
+
+                        try {
+                            init(argument);
+                        } catch (error) {
+                            message = `${error.name}: ${error.message}`;
+                        }
+
+                        errors.push({ name, method, message });
+                    }
+                }
+
+                return {
+                    errors,
+                    unchanged: $.getHtml(document.body) === html &&
+                        $.getData(node, UI.Autocomplete.DATA_KEY) === instance,
+                };
+            });
+
+            for (const { name, method, message } of state.errors) {
+                expect(message, `${name} (${method})`).toBe('TypeError: Autocomplete must be created on an input element.');
+            }
+            expect(state.unchanged).toBe(true);
+        });
+
         for (const tag of ['div', 'select', 'textarea']) {
             for (const { name, init } of [
                 { name: 'constructor', init: () => new UI.Autocomplete($.findOne('#invalid')) },
