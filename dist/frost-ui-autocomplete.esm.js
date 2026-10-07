@@ -159,6 +159,7 @@ var Autocomplete = class extends BaseComponent {
 	#loaderNode = null;
 	#loadResults = null;
 	#menuNode = null;
+	#observer = null;
 	#popper = null;
 	#request = null;
 	#scrollEvent = null;
@@ -190,6 +191,7 @@ var Autocomplete = class extends BaseComponent {
 	/** @inheritdoc */
 	dispose() {
 		if (!this.node) return;
+		this.#observer?.disconnect();
 		this.#transition = null;
 		this.#cancelRequest();
 		if (!this.node) return;
@@ -212,6 +214,7 @@ var Autocomplete = class extends BaseComponent {
 		this.#loaderNode = null;
 		this.#loadResults = null;
 		this.#menuNode = null;
+		this.#observer = null;
 		this.#scrollEvent = null;
 		super.dispose();
 	}
@@ -309,6 +312,20 @@ var Autocomplete = class extends BaseComponent {
 	* Attaches input and menu events.
 	*/
 	#events() {
+		this.#observer = new MutationObserver(() => {
+			if (this.node && !this.#isEditable()) {
+				this.#cancelRequest();
+				this.hide();
+			}
+		});
+		this.#observer.observe(this.node, {
+			attributes: true,
+			attributeFilter: ["disabled", "readonly"]
+		});
+		for (const fieldset of $.parents(this.node, "fieldset")) this.#observer.observe(fieldset, {
+			attributes: true,
+			attributeFilter: ["disabled"]
+		});
 		$.addEventDelegate(this.#menuNode, "mousedown.ui.autocomplete", "[data-ui-action=\"select\"]", (event) => {
 			if (event.button === 0) event.preventDefault();
 		});
@@ -322,7 +339,7 @@ var Autocomplete = class extends BaseComponent {
 			this.hide();
 		});
 		this.#inputEvent = $._debounce(() => {
-			if (!this.node || !$.is(this.node, ":focus")) return;
+			if (!this.#isEditable() || !$.is(this.node, ":focus")) return;
 			if (!$.isConnected(this.#menuNode) || this.#transition?.direction === "out") {
 				this.#show("first");
 				return;
@@ -331,7 +348,7 @@ var Autocomplete = class extends BaseComponent {
 		});
 		$.addEvent(this.node, "input.ui.autocomplete", this.#inputEvent);
 		$.addEvent(this.node, "keydown.ui.autocomplete", (event) => {
-			if (event.isComposing || ![
+			if (!this.#isEditable() || event.isComposing || ![
 				"ArrowDown",
 				"ArrowUp",
 				"Enter",
@@ -446,7 +463,14 @@ var Autocomplete = class extends BaseComponent {
 	* @returns {boolean} Whether the request is current.
 	*/
 	#isCurrentRequest(request) {
-		return Boolean(this.node && this.#request === request && !request.controller.signal.aborted && request.term === this.#term && $.isConnected(this.#menuNode));
+		return Boolean(this.#isEditable() && this.#request === request && !request.controller.signal.aborted && request.term === this.#term && $.isConnected(this.#menuNode));
+	}
+	/**
+	* Checks native readonly state and inherited fieldset disabling.
+	* @returns {boolean} Whether the input can be edited.
+	*/
+	#isEditable() {
+		return Boolean(this.node && !$.is(this.node, ":disabled") && !$.getProperty(this.node, "readOnly"));
 	}
 	/**
 	* Loads results for a term.
@@ -455,6 +479,7 @@ var Autocomplete = class extends BaseComponent {
 	* @returns {boolean} Whether the menu has content or pending content to display.
 	*/
 	#load(term, focus) {
+		if (!this.#isEditable()) return false;
 		if (!this.#meetsMinimumSearch(term)) {
 			this.#cancelRequest();
 			if (!this.node) return false;
@@ -617,7 +642,7 @@ var Autocomplete = class extends BaseComponent {
 	* @param {string} options.term The current search term.
 	*/
 	#requestData({ focus, offset = 0, term }) {
-		if (!this.node || offset && (this.#request || term !== this.#term)) return;
+		if (!this.#isEditable() || offset && (this.#request || term !== this.#term)) return;
 		if (!offset) {
 			this.#cancelRequest();
 			if (!this.node) return;
@@ -691,7 +716,7 @@ var Autocomplete = class extends BaseComponent {
 	* @param {HTMLLIElement} item The option to select.
 	*/
 	#selectItem(item) {
-		if (!this.node || !item || !this.#activeItems.includes(item)) return;
+		if (!this.#isEditable() || !item || !this.#activeItems.includes(item)) return;
 		const value = $.getAttribute(item, "data-ui-value");
 		if (value !== $.getValue(this.node)) {
 			$.setValue(this.node, value);
@@ -705,7 +730,7 @@ var Autocomplete = class extends BaseComponent {
 	* @param {AutocompleteFocus} focus The initial focus behavior.
 	*/
 	#show(focus) {
-		if (!this.node || $.getProperty(this.node, "disabled") || $.getProperty(this.node, "readOnly") || $.isConnected(this.#menuNode) && this.#transition?.direction !== "out") return;
+		if (!this.#isEditable() || $.isConnected(this.#menuNode) && this.#transition?.direction !== "out") return;
 		const term = $.getValue(this.node);
 		if (!this.#meetsMinimumSearch(term)) {
 			this.#cancelRequest();
@@ -716,7 +741,7 @@ var Autocomplete = class extends BaseComponent {
 			this.#resetMenu();
 			return;
 		}
-		if (!$.triggerOne(this.node, "show.ui.autocomplete") || !this.node) return;
+		if (!$.triggerOne(this.node, "show.ui.autocomplete") || !this.#isEditable()) return;
 		if (localResults) {
 			this.#term = term;
 			this.#renderResults(localResults, { focus });
@@ -724,7 +749,7 @@ var Autocomplete = class extends BaseComponent {
 			focus,
 			term
 		});
-		if (!this.node) return;
+		if (!this.#isEditable()) return;
 		if (!$.isConnected(this.#menuNode)) this.#appendMenu();
 		$.setStyle(this.#menuNode, { display: "block" });
 		$.css(this.#menuNode, "opacity");

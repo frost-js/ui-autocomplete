@@ -59,6 +59,38 @@ test.describe('Autocomplete remote results', () => {
             await expect(input).toHaveValue('new');
         });
 
+        for (const { target, property } of [
+            { target: '#autocomplete', property: 'readOnly' },
+            { target: '#autocomplete', property: 'disabled' },
+            { target: '#fields', property: 'disabled' },
+        ]) {
+            test(`aborts pending results when ${target}.${property} changes and ignores late responses`, async ({ page }) => {
+                await page.evaluate(() => {
+                    $.setHtml(document.body, '<fieldset id="fields"><input id="autocomplete"></fieldset>');
+                    window.request = null;
+                    UI.Autocomplete.init($.findOne('#autocomplete'), {
+                        debounce: 0,
+                        getResults(options) {
+                            return new Promise((resolve) => {
+                                window.request = { options, resolve };
+                            });
+                        },
+                        minSearch: 0,
+                    }).show();
+                });
+                await expect.poll(() => page.evaluate(() => Boolean(window.request))).toBe(true);
+                await page.evaluate(({ target, property }) => {
+                    $.setProperty(target, property, true);
+                    window.request.resolve({ results: ['Late'] });
+                }, { target, property });
+
+                await expect.poll(() => page.evaluate(() => window.request.options.signal.aborted)).toBe(true);
+                await expect(page.locator('.autocomplete-menu')).toHaveCount(0);
+                await expect(page.locator('#autocomplete')).toHaveValue('');
+                await expect(page.locator('#autocomplete')).toHaveAttribute('aria-expanded', 'false');
+            });
+        }
+
         test('closes after an empty response', async ({ page }) => {
             await page.evaluate(() => {
                 UI.Autocomplete.init($.findOne('#autocomplete'), {

@@ -168,6 +168,7 @@ export default class Autocomplete extends BaseComponent {
     #loaderNode = null;
     #loadResults = null;
     #menuNode = null;
+    #observer = null;
     #popper = null;
     #request = null;
     #scrollEvent = null;
@@ -216,6 +217,7 @@ export default class Autocomplete extends BaseComponent {
             return;
         }
 
+        this.#observer?.disconnect();
         this.#transition = null;
         this.#cancelRequest();
 
@@ -254,6 +256,7 @@ export default class Autocomplete extends BaseComponent {
         this.#loaderNode = null;
         this.#loadResults = null;
         this.#menuNode = null;
+        this.#observer = null;
         this.#scrollEvent = null;
 
         super.dispose();
@@ -418,6 +421,23 @@ export default class Autocomplete extends BaseComponent {
      * Attaches input and menu events.
      */
     #events() {
+        this.#observer = new MutationObserver(() => {
+            if (this.node && !this.#isEditable()) {
+                this.#cancelRequest();
+                this.hide();
+            }
+        });
+        this.#observer.observe(this.node, {
+            attributes: true,
+            attributeFilter: ['disabled', 'readonly'],
+        });
+        for (const fieldset of $.parents(this.node, 'fieldset')) {
+            this.#observer.observe(fieldset, {
+                attributes: true,
+                attributeFilter: ['disabled'],
+            });
+        }
+
         $.addEventDelegate(
             this.#menuNode,
             'mousedown.ui.autocomplete',
@@ -457,7 +477,7 @@ export default class Autocomplete extends BaseComponent {
 
         this.#inputEvent = $._debounce(() => {
             if (
-                !this.node ||
+                !this.#isEditable() ||
                 !$.is(this.node, ':focus')
             ) {
                 return;
@@ -480,6 +500,7 @@ export default class Autocomplete extends BaseComponent {
 
         $.addEvent(this.node, 'keydown.ui.autocomplete', (event) => {
             if (
+                !this.#isEditable() ||
                 event.isComposing ||
                 !['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(event.key)
             ) {
@@ -657,12 +678,22 @@ export default class Autocomplete extends BaseComponent {
      */
     #isCurrentRequest(request) {
         return Boolean(
-            this.node &&
+            this.#isEditable() &&
             this.#request === request &&
             !request.controller.signal.aborted &&
             request.term === this.#term &&
             $.isConnected(this.#menuNode),
         );
+    }
+
+    /**
+     * Checks native readonly state and inherited fieldset disabling.
+     * @returns {boolean} Whether the input can be edited.
+     */
+    #isEditable() {
+        return Boolean(this.node &&
+            !$.is(this.node, ':disabled') &&
+            !$.getProperty(this.node, 'readOnly'));
     }
 
     /**
@@ -672,6 +703,10 @@ export default class Autocomplete extends BaseComponent {
      * @returns {boolean} Whether the menu has content or pending content to display.
      */
     #load(term, focus) {
+        if (!this.#isEditable()) {
+            return false;
+        }
+
         if (!this.#meetsMinimumSearch(term)) {
             this.#cancelRequest();
 
@@ -920,7 +955,7 @@ export default class Autocomplete extends BaseComponent {
      * @param {string} options.term The current search term.
      */
     #requestData({ focus, offset = 0, term }) {
-        if (!this.node || (offset && (this.#request || term !== this.#term))) {
+        if (!this.#isEditable() || (offset && (this.#request || term !== this.#term))) {
             return;
         }
 
@@ -1052,7 +1087,7 @@ export default class Autocomplete extends BaseComponent {
      * @param {HTMLLIElement} item The option to select.
      */
     #selectItem(item) {
-        if (!this.node || !item || !this.#activeItems.includes(item)) {
+        if (!this.#isEditable() || !item || !this.#activeItems.includes(item)) {
             return;
         }
 
@@ -1074,9 +1109,7 @@ export default class Autocomplete extends BaseComponent {
      */
     #show(focus) {
         if (
-            !this.node ||
-            $.getProperty(this.node, 'disabled') ||
-            $.getProperty(this.node, 'readOnly') ||
+            !this.#isEditable() ||
             (
                 $.isConnected(this.#menuNode) &&
                 this.#transition?.direction !== 'out'
@@ -1102,7 +1135,7 @@ export default class Autocomplete extends BaseComponent {
         // A lifecycle listener may dispose the component.
         if (
             !$.triggerOne(this.node, 'show.ui.autocomplete') ||
-            !this.node
+            !this.#isEditable()
         ) {
             return;
         }
@@ -1114,7 +1147,7 @@ export default class Autocomplete extends BaseComponent {
             this.#requestData({ focus, term });
         }
 
-        if (!this.node) {
+        if (!this.#isEditable()) {
             return;
         }
 

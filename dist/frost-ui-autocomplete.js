@@ -191,6 +191,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		#loaderNode = null;
 		#loadResults = null;
 		#menuNode = null;
+		#observer = null;
 		#popper = null;
 		#request = null;
 		#scrollEvent = null;
@@ -222,6 +223,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		/** @inheritdoc */
 		dispose() {
 			if (!this.node) return;
+			this.#observer?.disconnect();
 			this.#transition = null;
 			this.#cancelRequest();
 			if (!this.node) return;
@@ -244,6 +246,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 			this.#loaderNode = null;
 			this.#loadResults = null;
 			this.#menuNode = null;
+			this.#observer = null;
 			this.#scrollEvent = null;
 			super.dispose();
 		}
@@ -341,6 +344,20 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		* Attaches input and menu events.
 		*/
 		#events() {
+			this.#observer = new MutationObserver(() => {
+				if (this.node && !this.#isEditable()) {
+					this.#cancelRequest();
+					this.hide();
+				}
+			});
+			this.#observer.observe(this.node, {
+				attributes: true,
+				attributeFilter: ["disabled", "readonly"]
+			});
+			for (const fieldset of _fr0st_query.default.parents(this.node, "fieldset")) this.#observer.observe(fieldset, {
+				attributes: true,
+				attributeFilter: ["disabled"]
+			});
 			_fr0st_query.default.addEventDelegate(this.#menuNode, "mousedown.ui.autocomplete", "[data-ui-action=\"select\"]", (event) => {
 				if (event.button === 0) event.preventDefault();
 			});
@@ -354,7 +371,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 				this.hide();
 			});
 			this.#inputEvent = _fr0st_query.default._debounce(() => {
-				if (!this.node || !_fr0st_query.default.is(this.node, ":focus")) return;
+				if (!this.#isEditable() || !_fr0st_query.default.is(this.node, ":focus")) return;
 				if (!_fr0st_query.default.isConnected(this.#menuNode) || this.#transition?.direction === "out") {
 					this.#show("first");
 					return;
@@ -363,7 +380,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 			});
 			_fr0st_query.default.addEvent(this.node, "input.ui.autocomplete", this.#inputEvent);
 			_fr0st_query.default.addEvent(this.node, "keydown.ui.autocomplete", (event) => {
-				if (event.isComposing || ![
+				if (!this.#isEditable() || event.isComposing || ![
 					"ArrowDown",
 					"ArrowUp",
 					"Enter",
@@ -478,7 +495,14 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		* @returns {boolean} Whether the request is current.
 		*/
 		#isCurrentRequest(request) {
-			return Boolean(this.node && this.#request === request && !request.controller.signal.aborted && request.term === this.#term && _fr0st_query.default.isConnected(this.#menuNode));
+			return Boolean(this.#isEditable() && this.#request === request && !request.controller.signal.aborted && request.term === this.#term && _fr0st_query.default.isConnected(this.#menuNode));
+		}
+		/**
+		* Checks native readonly state and inherited fieldset disabling.
+		* @returns {boolean} Whether the input can be edited.
+		*/
+		#isEditable() {
+			return Boolean(this.node && !_fr0st_query.default.is(this.node, ":disabled") && !_fr0st_query.default.getProperty(this.node, "readOnly"));
 		}
 		/**
 		* Loads results for a term.
@@ -487,6 +511,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		* @returns {boolean} Whether the menu has content or pending content to display.
 		*/
 		#load(term, focus) {
+			if (!this.#isEditable()) return false;
 			if (!this.#meetsMinimumSearch(term)) {
 				this.#cancelRequest();
 				if (!this.node) return false;
@@ -649,7 +674,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		* @param {string} options.term The current search term.
 		*/
 		#requestData({ focus, offset = 0, term }) {
-			if (!this.node || offset && (this.#request || term !== this.#term)) return;
+			if (!this.#isEditable() || offset && (this.#request || term !== this.#term)) return;
 			if (!offset) {
 				this.#cancelRequest();
 				if (!this.node) return;
@@ -723,7 +748,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		* @param {HTMLLIElement} item The option to select.
 		*/
 		#selectItem(item) {
-			if (!this.node || !item || !this.#activeItems.includes(item)) return;
+			if (!this.#isEditable() || !item || !this.#activeItems.includes(item)) return;
 			const value = _fr0st_query.default.getAttribute(item, "data-ui-value");
 			if (value !== _fr0st_query.default.getValue(this.node)) {
 				_fr0st_query.default.setValue(this.node, value);
@@ -737,7 +762,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 		* @param {AutocompleteFocus} focus The initial focus behavior.
 		*/
 		#show(focus) {
-			if (!this.node || _fr0st_query.default.getProperty(this.node, "disabled") || _fr0st_query.default.getProperty(this.node, "readOnly") || _fr0st_query.default.isConnected(this.#menuNode) && this.#transition?.direction !== "out") return;
+			if (!this.#isEditable() || _fr0st_query.default.isConnected(this.#menuNode) && this.#transition?.direction !== "out") return;
 			const term = _fr0st_query.default.getValue(this.node);
 			if (!this.#meetsMinimumSearch(term)) {
 				this.#cancelRequest();
@@ -748,7 +773,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 				this.#resetMenu();
 				return;
 			}
-			if (!_fr0st_query.default.triggerOne(this.node, "show.ui.autocomplete") || !this.node) return;
+			if (!_fr0st_query.default.triggerOne(this.node, "show.ui.autocomplete") || !this.#isEditable()) return;
 			if (localResults) {
 				this.#term = term;
 				this.#renderResults(localResults, { focus });
@@ -756,7 +781,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 				focus,
 				term
 			});
-			if (!this.node) return;
+			if (!this.#isEditable()) return;
 			if (!_fr0st_query.default.isConnected(this.#menuNode)) this.#appendMenu();
 			_fr0st_query.default.setStyle(this.#menuNode, { display: "block" });
 			_fr0st_query.default.css(this.#menuNode, "opacity");

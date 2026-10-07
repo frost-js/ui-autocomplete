@@ -331,6 +331,95 @@ test.describe('Autocomplete', () => {
         });
     });
 
+    test.describe('native input state', () => {
+        test('honors disabled fieldsets and their first legend exemption', async ({ page }) => {
+            await page.evaluate(() => {
+                $.setHtml(document.body,
+                    '<fieldset disabled><legend><input id="legend"></legend>' +
+                    '<fieldset><input id="autocomplete"></fieldset></fieldset>',
+                );
+                for (const id of ['legend', 'autocomplete']) {
+                    UI.Autocomplete.init($.findOne(`#${id}`), { data: ['One'], minSearch: 0 }).show();
+                }
+            });
+
+            await expect(page.locator('#legend')).toHaveAttribute('aria-expanded', 'true');
+            await expect(page.locator('#autocomplete')).toHaveAttribute('aria-expanded', 'false');
+            await expect(page.locator('.autocomplete-menu')).toHaveCount(1);
+        });
+
+        for (const { target, property } of [
+            { target: '#autocomplete', property: 'readOnly' },
+            { target: '#autocomplete', property: 'disabled' },
+            { target: '#inner', property: 'disabled' },
+            { target: '#outer', property: 'disabled' },
+        ]) {
+            test(`closes the menu when ${target}.${property} changes and reopens when enabled`, async ({ page }) => {
+                await page.evaluate(() => {
+                    $.setHtml(document.body, '<fieldset id="outer"><fieldset id="inner"><input id="autocomplete"></fieldset></fieldset>');
+                    UI.Autocomplete.init($.findOne('#autocomplete'), { data: ['One'], minSearch: 0 }).show();
+                });
+                await expect(page.locator('.autocomplete-menu')).toBeVisible();
+                await page.evaluate(({ target, property }) => $.setProperty(target, property, true), { target, property });
+                await expect(page.locator('#autocomplete')).toHaveAttribute('aria-expanded', 'false');
+                await expect(page.locator('#autocomplete')).not.toHaveAttribute('aria-activedescendant');
+                await expect(page.locator('.autocomplete-menu')).toHaveCount(0);
+
+                await page.evaluate(({ target, property }) => {
+                    $.setProperty(target, property, false);
+                    $('#autocomplete').autocomplete('show');
+                }, { target, property });
+                await expect(page.locator('.autocomplete-item')).toHaveText('One');
+            });
+
+            for (const method of ['click', 'Enter']) {
+                test(`prevents ${method} selection immediately after ${target}.${property} changes`, async ({ page }) => {
+                    await page.evaluate(({ target, property, method }) => {
+                        $.setHtml(document.body, '<fieldset id="outer"><fieldset id="inner"><input id="autocomplete"></fieldset></fieldset>');
+                        const input = $.findOne('#autocomplete');
+                        UI.Autocomplete.init(input, { data: ['One'], minSearch: 0 }).show();
+                        $.addEvent(input, 'change', () => $.setDataset(input, 'changed', true));
+                        $.setProperty(target, property, true);
+
+                        // Dispatch in the same turn, before mutation observers run.
+                        if (method === 'click') {
+                            $.click('.autocomplete-item');
+                        } else {
+                            input.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, cancelable: true, key: 'Enter' }));
+                        }
+                    }, { target, property, method });
+
+                    await expect(page.locator('#autocomplete')).toHaveValue('');
+                    await expect(page.locator('#autocomplete')).not.toHaveAttribute('data-changed');
+                });
+            }
+        }
+
+        test('stops showing when a show listener changes native state', async ({ page }) => {
+            await page.evaluate(() => {
+                const input = $.findOne('#autocomplete');
+                $.addEvent(input, 'show.ui.autocomplete', () => $.setProperty(input, 'readOnly', true));
+                UI.Autocomplete.init(input, { data: ['One'], minSearch: 0 }).show();
+            });
+            await expect(page.locator('.autocomplete-menu')).toHaveCount(0);
+            await expect(page.locator('#autocomplete')).toHaveAttribute('aria-expanded', 'false');
+        });
+
+        test('ignores pending native state mutations after disposal and permits reinitialization', async ({ page }) => {
+            await page.evaluate(() => {
+                const input = $.findOne('#autocomplete');
+                const instance = UI.Autocomplete.init(input, { data: ['One'], minSearch: 0 });
+                instance.show();
+                $.setProperty(input, 'readOnly', true);
+                instance.dispose();
+                $.setProperty(input, 'readOnly', false);
+                UI.Autocomplete.init(input, { data: ['Two'], minSearch: 0 }).show();
+            });
+            await expect(page.locator('.autocomplete-item')).toHaveText('Two');
+            await expect(page.locator('#autocomplete')).toHaveAttribute('aria-expanded', 'true');
+        });
+    });
+
     test.describe('#toggle', () => {
         for (const { name, toggle } of [
             { name: 'class', toggle: () => window.autocomplete.toggle() },
