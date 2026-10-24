@@ -190,6 +190,8 @@ $.ready(() => {
     });
 
     Autocomplete.init($.findOne('#hero-autocomplete'), {
+        // Keep results outside the hero card's rounded overflow clipping.
+        appendTo: document.body,
         data: cityData,
         fullWidth: true,
         minSearch: 0,

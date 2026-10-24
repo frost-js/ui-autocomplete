@@ -1,6 +1,6 @@
 {
     "name": "@fr0st/ui-autocomplete",
-    "version": "4.0.1",
+    "version": "4.0.2",
     "private": false,
     "description": "Autocomplete input component for Frost UI with local and asynchronous results, keyboard navigation, custom rendering, and pagination.",
     "keywords": [
