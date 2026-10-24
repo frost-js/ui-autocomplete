@@ -651,7 +651,7 @@ var Autocomplete = class extends BaseComponent {
 			this.#resetMenu();
 		} else $.detach(this.#errorNode);
 		const request = {
-			controller: new AbortController(),
+			controller: new window.AbortController(),
 			focus,
 			offset,
 			term

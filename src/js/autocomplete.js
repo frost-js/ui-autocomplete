@@ -972,7 +972,7 @@ export default class Autocomplete extends BaseComponent {
         }
 
         const request = {
-            controller: new AbortController(),
+            controller: new window.AbortController(),
             focus,
             offset,
             term,

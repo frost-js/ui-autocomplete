@@ -683,7 +683,7 @@ _fr0st_query = __toESM(_fr0st_query, 1);
 				this.#resetMenu();
 			} else _fr0st_query.default.detach(this.#errorNode);
 			const request = {
-				controller: new AbortController(),
+				controller: new window.AbortController(),
 				focus,
 				offset,
 				term
