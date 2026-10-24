@@ -417,7 +417,7 @@ export default class Autocomplete extends BaseComponent {
      * Attaches input and menu events.
      */
     #events() {
-        this.#observer = new MutationObserver(() => {
+        this.#observer = new window.MutationObserver(() => {
             if (this.node && !this.#isEditable()) {
                 this.#cancelRequest();
                 this.hide();
