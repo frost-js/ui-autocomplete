@@ -406,11 +406,10 @@ npm i -D sass
 `src/styles.scss`
 
 ```scss
-@use "@fr0st/ui-autocomplete/src/scss/vars" with (
+@use "@fr0st/ui-autocomplete/src/scss/autocomplete" with (
     $autocomplete-min-width: 14rem,
     $autocomplete-item-padding-y: .75rem
 );
-@use "@fr0st/ui-autocomplete/src/scss/autocomplete";
 ```
 
 Compile the entry point with npm package resolution enabled:
@@ -419,7 +418,7 @@ Compile the entry point with npm package resolution enabled:
 npx sass --load-path=node_modules src/styles.scss dist/styles.css
 ```
 
-Configure the [component variables](./src/scss/vars.scss) before loading the `autocomplete` module. All variables have `!default` values. Include Frost UI CSS separately. Build tools that already resolve Sass modules from npm packages do not need the explicit load path.
+The `autocomplete` module forwards the [component variables](./src/scss/_vars.scss), all of which have `!default` values. Include Frost UI CSS separately. Build tools that already resolve Sass modules from npm packages do not need the explicit load path.
 
 ## Themes and RTL
 
