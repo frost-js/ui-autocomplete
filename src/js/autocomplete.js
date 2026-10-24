@@ -65,7 +65,7 @@ const window = $.getWindow();
 /**
  * @typedef {object} AutocompleteOptions
  * @property {AutocompleteLanguage} [lang] The localized status messages.
- * @property {string[]|null} [data=null] The locally filtered result values.
+ * @property {string[]|null} [data=[]] The locally filtered result values.
  * @property {AutocompleteGetResultsCallback|null} [getResults=null] The asynchronous results callback.
  * @property {AutocompleteRenderCallback} [renderResult] The result rendering callback.
  * @property {AutocompleteSanitizeCallback} [sanitize] The HTML sanitizing callback.
