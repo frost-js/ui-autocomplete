@@ -1,7 +1,7 @@
 import { BaseComponent, Popper, generateId, initComponent, waitForTransition } from "@fr0st/ui";
 import $ from "@fr0st/query";
 
-//#region src/js/helpers.js
+// src/js/helpers.js
 /**
 * Normalizes a value for case- and accent-insensitive matching.
 * @param {string} value The value to normalize.
@@ -11,8 +11,7 @@ function normalizeText(value) {
 	return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
 
-//#endregion
-//#region src/js/autocomplete.js
+// src/js/autocomplete.js
 /** @import { NodeInput } from '@fr0st/query/src/helpers.js'; */
 /** @import { Placement, Position } from '@fr0st/ui/src/js/popper/popper.js'; */
 var window = $.getWindow();
@@ -770,11 +769,9 @@ var Autocomplete = class extends BaseComponent {
 	}
 };
 
-//#endregion
-//#region src/js/index.js
+// src/js/index.js
 initComponent("autocomplete", Autocomplete);
 var js_default = Autocomplete;
 
-//#endregion
 export { js_default as default };
 //# sourceMappingURL=frost-ui-autocomplete.esm.js.map
